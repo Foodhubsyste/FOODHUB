@@ -144,6 +144,22 @@ app.use("/api", (req, res, next) => {
   return requireAdmin(req, res, next);
 });
 
+app.post("/api/customers/session", (req, res) => {
+  const error = validateCustomer(req.body);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const db = readDb();
+  let customer = db.customers.find(c => c.contact_number === req.body.contact_number);
+  if (customer) {
+    if (customer.full_name.toLowerCase() !== req.body.full_name.trim().toLowerCase()) return fail(res, 409, "This phone number is already registered with another customer", "contact_number");
+    customer.address = req.body.address.trim();
+    writeDb(db);
+    return ok(res, customer, "Customer session started");
+  }
+  customer = { id: nextId("C", db.customers), full_name: req.body.full_name.trim(), contact_number: req.body.contact_number, address: req.body.address.trim(), preferences: "", total_orders: 0 };
+  db.customers.push(customer); writeDb(db);
+  return ok(res, customer, "Customer registered", 201);
+});
+
 app.get("/api/customers/:id/orders", (req, res) => {
   const db = readDb();
   if (!db.customers.some(c => c.id === req.params.id)) return fail(res, 404, "Customer not found");
