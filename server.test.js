@@ -158,6 +158,51 @@ test("invalid order items are rejected", async () => {
   expect(res.status).toBe(422);
 });
 
+
+test("completing an order creates a sale and cancelling removes the sale", async () => {
+  const db = JSON.parse(fs.readFileSync(dbFile, "utf8"));
+  const customer = db.customers[0];
+  const item = db.menuItems.find(x => x.stock_quantity > 0);
+  const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+  const order = await request(app)
+    .post("/api/orders")
+    .send({
+      customer_id: customer.id,
+      items: [{ menu_id: item.id, quantity: 1 }],
+      fulfillment_type: "pickup",
+      scheduled_datetime: future
+    });
+  expect(order.status).toBe(201);
+
+  const login = await request(app)
+    .post("/api/admin/login")
+    .send({ username: process.env.ADMIN_USERNAME || "admin", password: process.env.ADMIN_PASSWORD || "foodhub123" });
+  const token = login.body.data.token;
+
+  const completed = await request(app)
+    .put("/api/orders/" + order.body.data.id)
+    .set("Authorization", "Bearer " + token)
+    .send({ order_status: "completed", payment_status: "paid", payment_method: "cash" });
+  expect(completed.status).toBe(200);
+
+  const sales = await request(app)
+    .get("/api/sales")
+    .set("Authorization", "Bearer " + token);
+  expect(sales.body.data.some(s => s.order_id === order.body.data.id)).toBe(true);
+
+  const cancelled = await request(app)
+    .put("/api/orders/" + order.body.data.id)
+    .set("Authorization", "Bearer " + token)
+    .send({ order_status: "cancelled" });
+  expect(cancelled.status).toBe(200);
+
+  const salesAfter = await request(app)
+    .get("/api/sales")
+    .set("Authorization", "Bearer " + token);
+  expect(salesAfter.body.data.some(s => s.order_id === order.body.data.id)).toBe(false);
+});
+
 test("frontend files exist", () => {
   expect(fs.existsSync(path.join(__dirname, "public", "index.html"))).toBe(true);
   expect(fs.existsSync(path.join(__dirname, "public", "app.js"))).toBe(true);
