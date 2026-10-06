@@ -2,8 +2,8 @@
   function ready(){
     function go(from,to){
       var a=document.getElementById(from), b=document.getElementById(to);
-      if(a) a.classList.add('hidden');
-      if(b) b.classList.remove('hidden');
+      if(a){ a.classList.add('hidden'); a.style.display='none'; }
+      if(b){ b.classList.remove('hidden'); b.style.display=''; }
     }
     var admin=document.getElementById('adminChoice');
     var customer=document.getElementById('customerChoice');
