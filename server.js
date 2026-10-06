@@ -102,6 +102,54 @@ function validateOrder(body, db) {
   return null;
 }
 
+// Simple admin authentication for the school/demo deployment.
+// Set ADMIN_USERNAME and ADMIN_PASSWORD in Railway environment variables for production.
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "foodhub123";
+const adminTokens = new Set();
+
+function createAdminToken() {
+  return require("crypto").randomBytes(24).toString("hex");
+}
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!token || !adminTokens.has(token)) return fail(res, 401, "Admin login required");
+  next();
+}
+
+app.post("/api/admin/login", (req, res) => {
+  const username = String(req.body.username || "").trim();
+  const password = String(req.body.password || "");
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) return fail(res, 401, "Invalid admin username or password");
+  const token = createAdminToken();
+  adminTokens.add(token);
+  return ok(res, { token, username }, "Admin login successful");
+});
+
+app.post("/api/admin/logout", (req, res) => {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (token) adminTokens.delete(token);
+  return ok(res, null, "Logged out");
+});
+
+// Customer-facing routes remain public. Everything else under /api is admin-only.
+app.use("/api", (req, res, next) => {
+  if (req.path === "/health" || req.path === "/admin/login" || req.path === "/admin/logout") return next();
+  if (req.method === "GET" && req.path === "/menu") return next();
+  if (req.method === "POST" && req.path === "/customers") return next();
+  if (req.method === "POST" && req.path === "/orders") return next();
+  if (req.method === "GET" && /^\/customers\/[^/]+\/orders$/.test(req.path)) return next();
+  return requireAdmin(req, res, next);
+});
+
+app.get("/api/customers/:id/orders", (req, res) => {
+  const db = readDb();
+  if (!db.customers.some(c => c.id === req.params.id)) return fail(res, 404, "Customer not found");
+  return ok(res, db.orders.filter(o => o.customer_id === req.params.id), "Customer orders retrieved");
+});
+
 // Health
 app.get("/api/health", (req, res) => ok(res, { service: "FOODHUB", uptime: process.uptime() }));
 
