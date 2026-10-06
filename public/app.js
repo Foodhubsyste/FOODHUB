@@ -15,7 +15,7 @@ function toast(msg,type='success'){const x=document.createElement('div');x.class
 function show(id){['welcomeScreen','roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el)el.classList.toggle('hidden',x!==id)})}
 function table(headers,rows,empty='No records found.'){if(!rows.length)return '<div class="empty"><div style="font-size:30px">📭</div><b>'+empty+'</b><span>There is nothing to display yet.</span></div>';return '<div class="table-card"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
 
-function adminTab(name){$$$('.page').forEach(x=>x.classList.toggle('active',x.id===name));$$$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$('#pageTitle').textContent={dashboard:'Dashboard',menu:'Menu',customers:'Customers',orders:'Orders',sales:'Sales'}[name];if(window.innerWidth<=800)$('#sidebar').classList.remove('open')}
+function adminTab(name){$('.page').forEach(x=>x.classList.toggle('active',x.id===name));$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$('#pageTitle').textContent={dashboard:'Dashboard',menu:'Menu',customers:'Customers',orders:'Orders',sales:'Sales'}[name];if(window.innerWidth<=800)$('#sidebar').classList.remove('open')}
 
 async function loadAdmin(){
   try{[menu,customers,orders,sales]=await Promise.all([api('/api/menu'),api('/api/customers'),api('/api/orders'),api('/api/sales')]);renderAdmin();const d=await api('/api/dashboard');renderStats(d)}catch(e){if(e.message.includes('login'))logoutAdmin();else toast(e.message,'error')}
