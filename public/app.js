@@ -12,7 +12,7 @@ async function api(url,opt={}){
   if(!r.ok)throw Error(j.error||j.message||'Request failed');return j.data;
 }
 function toast(msg,type='success'){const x=document.createElement('div');x.className='toast-msg '+type;x.textContent=msg;$('#toast').appendChild(x);setTimeout(()=>x.remove(),3200)}
-function show(id){['roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);el.classList.add('hidden');el.style.display='none'});const target=$('#'+id);if(target){target.classList.remove('hidden');target.style.display=''}}
+function show(id){['roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el){el.classList.add('hidden');el.style.display='none'}});const target=$('#'+id);if(target){target.classList.remove('hidden');target.style.removeProperty('display')}}
 function table(headers,rows,empty='No records found.'){if(!rows.length)return '<div class="empty"><div style="font-size:30px">📭</div><b>'+empty+'</b><span>There is nothing to display yet.</span></div>';return '<div class="table-card"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
 
 function adminTab(name){$$('.page').forEach(x=>x.classList.toggle('active',x.id===name));$$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$('#pageTitle').textContent={dashboard:'Dashboard',menu:'Menu',customers:'Customers',orders:'Orders',sales:'Sales'}[name];if(window.innerWidth<=800)$('#sidebar').classList.remove('open')}
@@ -100,6 +100,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     const welcome=$('#welcomeScreen');
     if(!welcome || welcome.classList.contains('hidden')) return;
     welcome.classList.add('hidden');
+    welcome.style.display='none';
     const savedCustomer=localStorage.getItem('foodhub_customer');
     if(adminToken){show('adminApp');loadAdmin()}
     else if(savedCustomer){try{currentCustomer=JSON.parse(savedCustomer);$('#customerGreeting').textContent='Hi, '+currentCustomer.full_name.split(' ')[0]+' 👋';show('customerApp');loadCustomer()}catch(_){localStorage.removeItem('foodhub_customer');show('roleScreen')}}
