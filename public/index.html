@@ -30,16 +30,4 @@
 
 <div id="customerApp" class="customer-app hidden"><header class="customer-top"><div class="brand"><div class="brand-logo">🍴</div><div><b>FOODHUB</b><small>Home Food Ordering</small></div></div><div class="customer-actions"><span id="customerGreeting"></span><button id="customerLogout" class="outline-btn">Sign out</button></div></header><main class="customer-main"><div class="customer-hero"><div><span class="eyebrow light">WELCOME TO FOODHUB</span><h1>What are you craving today? 🍽️</h1><p>Choose your favorite meals and select pickup or delivery at checkout.</p></div></div><div class="customer-grid"><div><div class="customer-section-head"><div><span class="eyebrow">TODAY'S MENU</span><h2>Freshly prepared</h2></div><div class="search customer-search"><span>⌕</span><input id="customerMenuSearch" placeholder="Find a food..."></div></div><div id="customerMenu" class="food-grid"></div></div><aside class="cart-panel"><div class="cart-head"><h2>Your Order</h2><span id="cartCount" class="cart-count">0</span></div><div id="cartItems"></div><div class="cart-total"><span>Total</span><strong id="cartTotal">₱0.00</strong></div><button id="placeCustomerOrder" class="primary-btn full">Continue to Checkout →</button><p class="cart-note">Your order will be sent to the FOODHUB admin for confirmation.</p></aside></div><div class="customer-orders panel"><div class="panel-title"><div><span class="eyebrow">ORDER HISTORY</span><h3>Your Orders</h3></div></div><div id="customerOrders"></div></div></main></div>
 
-<div id="modal" class="modal hidden"></div><div id="toast" class="toast-wrap"></div><script>
-/* Independent 3-second splash + role-button failsafe. */
-setTimeout(function(){
-  var w=document.getElementById('welcomeScreen');
-  var r=document.getElementById('roleScreen');
-  if(w) w.classList.add('hidden');
-  if(r) r.classList.remove('hidden');
-  var a=document.getElementById('adminChoice'), c=document.getElementById('customerChoice');
-  if(a && !a.dataset.fallbackBound){a.dataset.fallbackBound='1';a.addEventListener('click',function(){r.classList.add('hidden');document.getElementById('adminLogin').classList.remove('hidden')});}
-  if(c && !c.dataset.fallbackBound){c.dataset.fallbackBound='1';c.addEventListener('click',function(){r.classList.add('hidden');document.getElementById('customerEntry').classList.remove('hidden')});}
-},3000);
-</script>
-<script src="/app.js"></script></body></html>
+<div id="modal" class="modal hidden"></div><div id="toast" class="toast-wrap"></div><script src="/app.js"></script></body></html>
