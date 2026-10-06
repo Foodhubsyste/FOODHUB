@@ -128,7 +128,7 @@ test("cancelling an order restores stock", async () => {
 
   const login = await request(app)
     .post("/api/admin/login")
-    .send({ username: "admin", password: "foodhub123" });
+    .send({ username: process.env.ADMIN_USERNAME || "admin", password: process.env.ADMIN_PASSWORD || "foodhub123" });
   const token = login.body.data.token;
 
   const updated = await request(app)
