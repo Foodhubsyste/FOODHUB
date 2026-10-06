@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "jest --runInBand --verbose",
-    "pretest": "node --check server.js && node --check public/app.js && node --check services/database.js && node --check services/foodhubService.js && node --check middleware/validation.js && node --check utils/response.js && node --check controllers/menuController.js && node --check controllers/customerController.js && node --check controllers/orderController.js && node --check controllers/reportController.js && node --check controllers/authController.js && node --check routes/menuRoutes.js && node --check routes/customerRoutes.js && node --check routes/orderRoutes.js && node --check routes/reportRoutes.js"
+    "pretest": "node --check server.js && node --check public/components.js && node --check public/app.js && node --check services/database.js && node --check services/foodhubService.js && node --check middleware/validation.js && node --check utils/response.js && node --check controllers/menuController.js && node --check controllers/customerController.js && node --check controllers/orderController.js && node --check controllers/reportController.js && node --check controllers/authController.js && node --check routes/menuRoutes.js && node --check routes/customerRoutes.js && node --check routes/orderRoutes.js && node --check routes/reportRoutes.js"
   },
   "dependencies": {
     "express": "^4.22.2"
