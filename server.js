@@ -94,6 +94,13 @@ function validateOrder(body, db) {
   if (!validString(body.customer_id, 4, 20)) return ["customer_id", "A valid customer is required"];
   if (!Array.isArray(body.items) || body.items.length === 0) return ["items", "At least one item is required"];
   if (!["pending", "confirmed", "ready", "completed", "cancelled"].includes(body.order_status || "pending")) return ["order_status", "Invalid order status"];
+  const fulfillment = body.fulfillment_type || "pickup";
+  if (!["pickup", "delivery"].includes(fulfillment)) return ["fulfillment_type", "Choose pickup or delivery"];
+  if (!validString(body.scheduled_datetime, 10, 40)) return ["scheduled_datetime", "A pickup or delivery date and time is required"];
+  const scheduled = new Date(body.scheduled_datetime);
+  if (Number.isNaN(scheduled.getTime())) return ["scheduled_datetime", "Please provide a valid date and time"];
+  if (scheduled.getTime() < Date.now() - 60000) return ["scheduled_datetime", "The selected date and time has already passed"];
+  if (fulfillment === "delivery" && !validString(body.delivery_location, 5, 250)) return ["delivery_location", "A delivery location is required"];
   for (const line of body.items) {
     if (!validString(line.menu_id, 4, 20) || !Number.isInteger(line.quantity) || line.quantity < 1) return ["items", "Each order item needs a menu item and positive quantity"];
     const menu = db.menuItems.find(m => m.id === line.menu_id);
@@ -260,8 +267,15 @@ app.post("/api/orders", (req, res) => {
   const total = Number(items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2));
   const order = {
     id: nextId("O", db.orders), order_number: `ORD-${Date.now()}`, customer_id: customer.id, items,
-    total_amount: total, pickup_datetime: req.body.pickup_datetime || "", payment_status: req.body.payment_status || "unpaid",
-    order_status: req.body.order_status || "pending", notes: req.body.notes || "", created_at: new Date().toISOString()
+    total_amount: total,
+    fulfillment_type: req.body.fulfillment_type || "pickup",
+    delivery_location: req.body.fulfillment_type === "delivery" ? req.body.delivery_location.trim() : "",
+    scheduled_datetime: req.body.scheduled_datetime,
+    pickup_datetime: req.body.scheduled_datetime,
+    payment_status: req.body.payment_status || "unpaid",
+    order_status: req.body.order_status || "pending",
+    notes: req.body.notes || "",
+    created_at: new Date().toISOString()
   };
   items.forEach(line => {
     const menu = db.menuItems.find(m => m.id === line.menu_id);
@@ -278,7 +292,16 @@ app.put("/api/orders/:id", (req, res) => {
   if (req.body.order_status && !allowedStatuses.includes(req.body.order_status)) return fail(res, 422, "Invalid order status", "order_status");
   const allowedPayments = ["unpaid", "partial", "paid"];
   if (req.body.payment_status && !allowedPayments.includes(req.body.payment_status)) return fail(res, 422, "Invalid payment status", "payment_status");
-  db.orders[index] = { ...db.orders[index], pickup_datetime: req.body.pickup_datetime ?? db.orders[index].pickup_datetime, payment_status: req.body.payment_status ?? db.orders[index].payment_status, order_status: req.body.order_status ?? db.orders[index].order_status, notes: req.body.notes ?? db.orders[index].notes };
+  db.orders[index] = {
+    ...db.orders[index],
+    fulfillment_type: req.body.fulfillment_type ?? db.orders[index].fulfillment_type ?? "pickup",
+    delivery_location: req.body.delivery_location ?? db.orders[index].delivery_location ?? "",
+    scheduled_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
+    pickup_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
+    payment_status: req.body.payment_status ?? db.orders[index].payment_status,
+    order_status: req.body.order_status ?? db.orders[index].order_status,
+    notes: req.body.notes ?? db.orders[index].notes
+  };
   if (db.orders[index].order_status === "completed" && !db.sales.some(s => s.order_id === db.orders[index].id)) {
     db.sales.push({ id: nextId("S", db.sales), order_id: db.orders[index].id, transaction_date: new Date().toISOString().slice(0, 10), total_received: db.orders[index].total_amount, payment_method: req.body.payment_method || "cash" });
   }
