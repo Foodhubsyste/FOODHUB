@@ -202,4 +202,62 @@ describe("Week 5 — Arrange Act Assert controller/logic coverage", () => {
     expect(res.status).toBe(422);
     expect(res.body.field).toBe("items");
   });
+
+  test("standard response envelope: successful API response is consistent", async () => {
+    // Arrange
+    // Act
+    const res = await request(app).get("/api/menu");
+
+    // Assert
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(expect.objectContaining({
+      status: 200,
+      data: expect.any(Array),
+      error: null,
+      message: expect.any(String)
+    }));
+  });
+
+  test("delivery order: preserves fulfillment type and delivery location", async () => {
+    // Arrange
+    const db = JSON.parse(fs.readFileSync(dbFile, "utf8"));
+    const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    // Act
+    const res = await request(app)
+      .post("/api/orders")
+      .send({
+        customer_id: db.customers[0].id,
+        items: [{ menu_id: db.menuItems[0].id, quantity: 1 }],
+        fulfillment_type: "delivery",
+        delivery_location: "Poblacion, Maramag, Bukidnon",
+        scheduled_datetime: future
+      });
+
+    // Assert
+    expect(res.status).toBe(201);
+    expect(res.body.data.fulfillment_type).toBe("delivery");
+    expect(res.body.data.delivery_location).toBe("Poblacion, Maramag, Bukidnon");
+  });
+
+  test("controller architecture: routes point to thin controllers", () => {
+    // Arrange
+    const menuRoute = fs.readFileSync(path.join(__dirname, "routes", "menuRoutes.js"), "utf8");
+    const orderRoute = fs.readFileSync(path.join(__dirname, "routes", "orderRoutes.js"), "utf8");
+    const menuController = fs.readFileSync(path.join(__dirname, "controllers", "menuController.js"), "utf8");
+    const orderController = fs.readFileSync(path.join(__dirname, "controllers", "orderController.js"), "utf8");
+
+    // Act
+    const routesUseControllers =
+      menuRoute.includes('require("../controllers/menuController")') &&
+      orderRoute.includes('require("../controllers/orderController")');
+
+    // Assert
+    expect(routesUseControllers).toBe(true);
+    expect(menuController).not.toMatch(/validateMenu|validateCustomer|readDb\(/);
+    expect(orderController).not.toMatch(/validateOrder|validateCustomer|readDb\(/);
+    expect(menuController).toContain("service.createMenu");
+    expect(orderController).toContain("service.createOrder");
+  });
+
 });
