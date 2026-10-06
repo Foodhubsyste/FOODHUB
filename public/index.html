@@ -1,109 +1,33 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#ff6b35">
-  <title>FOODHUB | Home Food Manager</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ff6b35"><title>FOODHUB</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/styles.css"></head>
 <body>
-  <div id="welcomeScreen" class="welcome-screen">
-    <div class="welcome-orb orb-one"></div><div class="welcome-orb orb-two"></div>
-    <div class="welcome-content">
-      <div class="brand-mark"><span>🍴</span></div>
-      <div class="welcome-badge">FOODHUB MANAGEMENT SYSTEM</div>
-      <h1>Welcome to <span>FOODHUB</span></h1>
-      <p>Manage your menu, customers, orders and sales in one beautiful workspace.</p>
-      <div class="welcome-loader"><span></span><span></span><span></span></div>
+<div id="welcomeScreen" class="welcome"><div class="welcome-card"><div class="logo">🍴</div><div class="eyebrow">MARAmAG HOME FOOD</div><h1>Welcome to <span>FOODHUB</span></h1><p>Your simple and beautiful home food ordering system.</p><div class="dots"><i></i><i></i><i></i></div></div></div>
+
+<div id="roleScreen" class="role-screen hidden">
+  <div class="role-card">
+    <div class="logo small">🍴</div><div class="eyebrow">FOODHUB</div><h1>How would you like to enter?</h1><p>Choose your account type to continue.</p>
+    <div class="role-grid">
+      <button class="role-choice admin-choice" id="adminChoice"><span>🛡️</span><strong>Admin</strong><small>Manage menu, orders, customers and sales</small></button>
+      <button class="role-choice customer-choice" id="customerChoice"><span>🍽️</span><strong>Customer</strong><small>Browse food and place your order</small></button>
     </div>
   </div>
+</div>
 
-  <div id="appShell" class="app-shell is-hidden">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-icon">🍴</div>
-        <div><strong>FOODHUB</strong><small>Food Management</small></div>
-      </div>
-      <nav class="side-nav" aria-label="Main navigation">
-        <button class="nav-item active" data-tab="dashboard"><span>▦</span><span>Dashboard</span></button>
-        <button class="nav-item" data-tab="menu"><span>🍽</span><span>Menu</span></button>
-        <button class="nav-item" data-tab="customers"><span>♙</span><span>Customers</span></button>
-        <button class="nav-item" data-tab="orders"><span>▤</span><span>Orders</span></button>
-        <button class="nav-item" data-tab="sales"><span>₱</span><span>Sales</span></button>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="mini-status"><span class="status-dot"></span><div><strong>System Online</strong><small>Local server connected</small></div></div>
-      </div>
-    </aside>
+<div id="adminLogin" class="auth-screen hidden"><div class="auth-card"><button class="back-link" data-back="role">← Back</button><div class="auth-icon">🛡️</div><span class="eyebrow">ADMIN ACCESS</span><h1>Welcome, Admin</h1><p>Sign in to manage FOODHUB.</p><form id="adminLoginForm"><label>Username<input id="adminUsername" required autocomplete="username" placeholder="Admin username"></label><label>Password<input id="adminPassword" type="password" required autocomplete="current-password" placeholder="Password"></label><button class="primary-btn">Sign In</button><div id="loginError" class="form-error"></div></form><small class="hint">Demo default: admin / foodhub123</small></div></div>
 
-    <div class="mobile-overlay" id="mobileOverlay"></div>
-    <main class="main-content">
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="icon-button menu-toggle" id="menuToggle" aria-label="Open navigation">☰</button>
-          <div>
-            <span class="eyebrow">FOODHUB MANAGEMENT</span>
-            <h1 id="pageTitle">Dashboard</h1>
-          </div>
-        </div>
-        <div class="topbar-right">
-          <div class="live-pill"><span class="status-dot"></span> Live</div>
-          <button class="avatar" title="FOODHUB Admin">FH</button>
-        </div>
-      </header>
+<div id="customerEntry" class="auth-screen hidden"><div class="auth-card customer-auth"><button class="back-link" data-back="role">← Back</button><div class="auth-icon customer">🍽️</div><span class="eyebrow">CUSTOMER ACCESS</span><h1>Let's get your order started</h1><p>Enter your details once so we can prepare your order.</p><form id="customerEntryForm"><label>Full Name<input id="customerName" required maxlength="100" placeholder="Juan Dela Cruz"></label><label>Phone Number<input id="customerPhone" required inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX"></label><label>Address<textarea id="customerAddress" required maxlength="250" placeholder="Your complete address"></textarea></label><button class="primary-btn">Continue to Food Menu →</button><div id="customerError" class="form-error"></div></form></div></div>
 
-      <div class="page-wrap">
-        <section id="dashboard" class="page-section active-section">
-          <div class="hero-banner">
-            <div><span class="eyebrow light">GOOD TO SEE YOU</span><h2>Welcome back 👋</h2><p>Here is what's happening with your food business today.</p></div>
-            <div class="hero-decoration">🍜</div>
-          </div>
-          <div id="stats" class="stats-grid"></div>
-          <div class="section-grid">
-            <div class="panel">
-              <div class="panel-heading"><div><span class="eyebrow">QUICK OVERVIEW</span><h3>Recent Orders</h3></div><button class="text-button" data-tab-link="orders">View all →</button></div>
-              <div id="recentOrders"></div>
-            </div>
-            <div class="panel">
-              <div class="panel-heading"><div><span class="eyebrow">INVENTORY</span><h3>Stock Alerts</h3></div><button class="text-button" data-tab-link="menu">Manage →</button></div>
-              <div id="stockAlerts"></div>
-            </div>
-          </div>
-        </section>
+<div id="adminApp" class="app hidden">
+<aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-logo">🍴</div><div><b>FOODHUB</b><small>Admin Panel</small></div></div><nav><button class="nav active" data-tab="dashboard">▦ <span>Dashboard</span></button><button class="nav" data-tab="menu">🍽 <span>Menu</span></button><button class="nav" data-tab="customers">♙ <span>Customers</span></button><button class="nav" data-tab="orders">▤ <span>Orders</span></button><button class="nav" data-tab="sales">₱ <span>Sales</span></button></nav><button id="adminLogout" class="logout">↪ Sign out</button></aside>
+<main class="main"><header class="topbar"><button id="menuToggle" class="icon-btn">☰</button><div><span class="eyebrow">ADMIN MANAGEMENT</span><h2 id="pageTitle">Dashboard</h2></div><span class="live">● Live</span></header><div class="content">
+<section id="dashboard" class="page active"><div class="hero"><div><span class="eyebrow light">GOOD TO SEE YOU</span><h1>Welcome back, Admin 👋</h1><p>Monitor your food business from one place.</p></div><b>🍜</b></div><div id="stats" class="stats"></div><div class="two-col"><div class="panel"><div class="panel-title"><div><span class="eyebrow">QUICK OVERVIEW</span><h3>Recent Orders</h3></div><button class="link-btn" data-tab-link="orders">View all →</button></div><div id="recentOrders"></div></div><div class="panel"><div class="panel-title"><div><span class="eyebrow">INVENTORY</span><h3>Stock Alerts</h3></div><button class="link-btn" data-tab-link="menu">Manage →</button></div><div id="stockAlerts"></div></div></div></section>
+<section id="menu" class="page"><div class="section-head"><div><span class="eyebrow">FOOD CATALOG</span><h1>Menu</h1><p>Manage food items and inventory.</p></div><button class="primary-btn" id="addMenuBtn">＋ Add Menu Item</button></div><div class="toolbar"><div class="search"><span>⌕</span><input id="menuSearch" placeholder="Search menu..."></div><select id="menuFilter"><option value="all">All categories</option><option>Main Dish</option><option>Rice</option><option>Side Dish</option><option>Dessert</option><option>Beverage</option></select></div><div id="menuList"></div></section>
+<section id="customers" class="page"><div class="section-head"><div><span class="eyebrow">CUSTOMER DIRECTORY</span><h1>Customers</h1><p>Manage registered customers.</p></div><button class="primary-btn" id="addCustomerBtn">＋ Add Customer</button></div><div class="toolbar"><div class="search"><span>⌕</span><input id="customerSearch" placeholder="Search customers..."></div></div><div id="customerList"></div></section>
+<section id="orders" class="page"><div class="section-head"><div><span class="eyebrow">ORDER MANAGEMENT</span><h1>Orders</h1><p>Track every customer order.</p></div></div><div class="toolbar"><div class="search"><span>⌕</span><input id="orderSearch" placeholder="Search orders..."></div><select id="orderFilter"><option value="all">All statuses</option><option>pending</option><option>confirmed</option><option>ready</option><option>completed</option><option>cancelled</option></select></div><div id="orderList"></div></section>
+<section id="sales" class="page"><div class="section-head"><div><span class="eyebrow">FINANCIAL OVERVIEW</span><h1>Sales</h1><p>Completed transactions and revenue.</p></div></div><div id="salesSummary" class="sales-summary"></div><div id="salesList"></div></section>
+</div></main></div>
 
-        <section id="menu" class="page-section">
-          <div class="section-heading"><div><span class="eyebrow">FOOD CATALOG</span><h2>Menu</h2><p>Manage food items, pricing and inventory.</p></div><button class="primary-button" id="addMenuBtn">＋ Add Menu Item</button></div>
-          <div class="toolbar"><div class="search-box"><span>⌕</span><input id="menuSearch" placeholder="Search menu items..."></div><select id="menuFilter"><option value="all">All categories</option><option>Main Dish</option><option>Side Dish</option><option>Dessert</option><option>Beverage</option></select></div>
-          <div id="menuList"></div>
-        </section>
+<div id="customerApp" class="customer-app hidden"><header class="customer-top"><div class="brand"><div class="brand-logo">🍴</div><div><b>FOODHUB</b><small>Home Food Ordering</small></div></div><div class="customer-actions"><span id="customerGreeting"></span><button id="customerLogout" class="outline-btn">Sign out</button></div></header><main class="customer-main"><div class="customer-hero"><div><span class="eyebrow light">WELCOME TO FOODHUB</span><h1>What are you craving today? 🍽️</h1><p>Choose your favorite home-cooked meals and place an order for pickup.</p></div></div><div class="customer-grid"><div><div class="customer-section-head"><div><span class="eyebrow">TODAY'S MENU</span><h2>Freshly prepared</h2></div><div class="search customer-search"><span>⌕</span><input id="customerMenuSearch" placeholder="Find a food..."></div></div><div id="customerMenu" class="food-grid"></div></div><aside class="cart-panel"><div class="cart-head"><h2>Your Order</h2><span id="cartCount" class="cart-count">0</span></div><div id="cartItems"></div><div class="cart-total"><span>Total</span><strong id="cartTotal">₱0.00</strong></div><button id="placeCustomerOrder" class="primary-btn full">Place Order</button><p class="cart-note">Your order will be sent to the FOODHUB admin for confirmation.</p></aside></div><div class="customer-orders panel"><div class="panel-title"><div><span class="eyebrow">ORDER HISTORY</span><h3>Your Orders</h3></div></div><div id="customerOrders"></div></div></main></div>
 
-        <section id="customers" class="page-section">
-          <div class="section-heading"><div><span class="eyebrow">CUSTOMER DIRECTORY</span><h2>Customers</h2><p>Keep customer information organized.</p></div><button class="primary-button" id="addCustomerBtn">＋ Add Customer</button></div>
-          <div class="toolbar"><div class="search-box"><span>⌕</span><input id="customerSearch" placeholder="Search customers..."></div></div>
-          <div id="customerList"></div>
-        </section>
-
-        <section id="orders" class="page-section">
-          <div class="section-heading"><div><span class="eyebrow">ORDER MANAGEMENT</span><h2>Orders</h2><p>Track and update every customer order.</p></div><button class="primary-button" id="newOrderBtn">＋ New Order</button></div>
-          <div class="toolbar"><div class="search-box"><span>⌕</span><input id="orderSearch" placeholder="Search order or customer..."></div><select id="orderFilter"><option value="all">All statuses</option><option>pending</option><option>confirmed</option><option>ready</option><option>completed</option><option>cancelled</option></select></div>
-          <div id="orderList"></div>
-        </section>
-
-        <section id="sales" class="page-section">
-          <div class="section-heading"><div><span class="eyebrow">FINANCIAL OVERVIEW</span><h2>Sales</h2><p>Review completed transactions and revenue.</p></div></div>
-          <div id="salesSummary" class="sales-summary"></div>
-          <div id="salesList"></div>
-        </section>
-      </div>
-    </main>
-  </div>
-
-  <div id="modal" class="modal-backdrop is-hidden" role="dialog" aria-modal="true"></div>
-  <div id="toastContainer" class="toast-container"></div>
-  <script src="/app.js"></script>
-</body>
-</html>
+<div id="modal" class="modal hidden"></div><div id="toast" class="toast-wrap"></div><script src="/app.js"></script></body></html>
