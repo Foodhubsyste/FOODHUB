@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "jest --verbose --forceExit"
+    "test": "jest --runInBand --verbose"
   },
   "dependencies": {
     "express": "^4.22.2"
