@@ -8,8 +8,8 @@
   <div class="role-card">
     <div class="logo small">🍴</div><div class="eyebrow">FOODHUB</div><h1>How would you like to enter?</h1><p>Choose your account type to continue.</p>
     <div class="role-grid">
-      <button class="role-choice admin-choice" id="adminChoice"><span>🛡️</span><strong>Admin</strong><small>Manage menu, orders, customers and sales</small></button>
-      <button class="role-choice customer-choice" id="customerChoice"><span>🍽️</span><strong>Customer</strong><small>Browse food and place your order</small></button>
+      <button type="button" class="role-choice admin-choice" id="adminChoice" onclick="document.getElementById('roleScreen').classList.add('hidden');document.getElementById('adminLogin').classList.remove('hidden');"><span>🛡️</span><strong>Admin</strong><small>Manage menu, orders, customers and sales</small></button>
+      <button type="button" class="role-choice customer-choice" id="customerChoice" onclick="document.getElementById('roleScreen').classList.add('hidden');document.getElementById('customerEntry').classList.remove('hidden');"><span>🍽️</span><strong>Customer</strong><small>Browse food and place your order</small></button>
     </div>
   </div>
 </div>
