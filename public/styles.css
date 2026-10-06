@@ -4,3 +4,10 @@
 
 /* Customer checkout */
 .modal-subtitle{display:block;color:#8c949f;font-size:10px;margin-top:5px}.field-title{font-size:10px;font-weight:800;color:#68717d;display:block;margin-bottom:7px}.fulfillment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fulfillment-option{position:relative;display:block;cursor:pointer}.fulfillment-option input{position:absolute;opacity:0;pointer-events:none}.fulfillment-option span{display:block;border:1px solid var(--line);border-radius:13px;padding:14px;background:#fafbfc;transition:.2s}.fulfillment-option b{display:block;font-size:11px;margin:4px 0}.fulfillment-option small{display:block;color:#8d95a0;font-size:9px;line-height:1.4}.fulfillment-option input:checked+span{border-color:var(--orange);background:#fff2ec;box-shadow:0 0 0 2px #ff6b3520}.schedule-note{font-size:10px;color:#8d95a0;background:#f7f8fa;border-radius:10px;padding:10px}.form-error.full-field{grid-column:1/-1}@media(max-width:550px){.fulfillment-grid{grid-template-columns:1fr}.form-error.full-field{grid-column:auto}}
+
+/* Railway-safe splash: the role screen sits underneath and becomes visible after 3 seconds even if JavaScript fails. */
+#welcomeScreen.welcome{animation:foodhubSplash 3s forwards;pointer-events:none}
+@keyframes foodhubSplash{
+  0%,90%{opacity:1;visibility:visible}
+  100%{opacity:0;visibility:hidden}
+}
