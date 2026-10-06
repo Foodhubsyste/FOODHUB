@@ -35,3 +35,25 @@ Open `http://localhost:4444`.
 - `public/app.js` — frontend behavior and API calls
 - `public/styles.css` — UI styling
 - `data/db.json` — persistent application data
+
+
+## User Roles
+
+FOODHUB now starts with a role selection screen:
+
+- **Admin** — signs in and manages the menu, customers, orders, inventory, dashboard, and sales.
+- **Customer** — enters full name, Philippine phone number, and address, then gets a customer dashboard where they can browse available food, add items to a cart, place an order, and view their order history.
+
+### Admin demo login
+
+Default local/demo credentials:
+
+- Username: `admin`
+- Password: `foodhub123`
+
+For Railway, set these environment variables to change the credentials:
+
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+
+The admin login uses a server-side session token, while customer registration/session information is stored in the application's current JSON database.
