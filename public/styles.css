@@ -22,3 +22,8 @@
 .error-state{border-color:#ffd1d3;background:#fff9f9}
 .error-state strong{color:#c2383d}
 @keyframes foodhub-spin{to{transform:rotate(360deg)}}
+
+/* Week 7 — async form feedback */
+button:disabled{opacity:.65;cursor:not-allowed;transform:none!important}
+.form-error{min-height:18px;color:#c2383d;font-size:12px;font-weight:600}
+button[aria-busy="true"]{cursor:wait}
