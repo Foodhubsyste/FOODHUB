@@ -94,6 +94,13 @@ function validateOrder(body, db) {
   if (!validString(body.customer_id, 4, 20)) return ["customer_id", "A valid customer is required"];
   if (!Array.isArray(body.items) || body.items.length === 0) return ["items", "At least one item is required"];
   if (!["pending", "confirmed", "ready", "completed", "cancelled"].includes(body.order_status || "pending")) return ["order_status", "Invalid order status"];
+  const fulfillment = body.fulfillment_type || "pickup";
+  if (!["pickup", "delivery"].includes(fulfillment)) return ["fulfillment_type", "Choose pickup or delivery"];
+  if (!validString(body.scheduled_datetime, 10, 40)) return ["scheduled_datetime", "A pickup or delivery date and time is required"];
+  const scheduled = new Date(body.scheduled_datetime);
+  if (Number.isNaN(scheduled.getTime())) return ["scheduled_datetime", "Please provide a valid date and time"];
+  if (scheduled.getTime() < Date.now() - 60000) return ["scheduled_datetime", "The selected date and time has already passed"];
+  if (fulfillment === "delivery" && !validString(body.delivery_location, 5, 250)) return ["delivery_location", "A delivery location is required"];
   for (const line of body.items) {
     if (!validString(line.menu_id, 4, 20) || !Number.isInteger(line.quantity) || line.quantity < 1) return ["items", "Each order item needs a menu item and positive quantity"];
     const menu = db.menuItems.find(m => m.id === line.menu_id);
@@ -101,6 +108,70 @@ function validateOrder(body, db) {
   }
   return null;
 }
+
+// Simple admin authentication for the school/demo deployment.
+// Set ADMIN_USERNAME and ADMIN_PASSWORD in Railway environment variables for production.
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "foodhub123";
+const adminTokens = new Set();
+
+function createAdminToken() {
+  return require("crypto").randomBytes(24).toString("hex");
+}
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!token || !adminTokens.has(token)) return fail(res, 401, "Admin login required");
+  next();
+}
+
+app.post("/api/admin/login", (req, res) => {
+  const username = String(req.body.username || "").trim();
+  const password = String(req.body.password || "");
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) return fail(res, 401, "Invalid admin username or password");
+  const token = createAdminToken();
+  adminTokens.add(token);
+  return ok(res, { token, username }, "Admin login successful");
+});
+
+app.post("/api/admin/logout", (req, res) => {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (token) adminTokens.delete(token);
+  return ok(res, null, "Logged out");
+});
+
+// Customer-facing routes remain public. Everything else under /api is admin-only.
+app.use("/api", (req, res, next) => {
+  if (req.path === "/health" || req.path === "/admin/login" || req.path === "/admin/logout") return next();
+  if (req.method === "GET" && req.path === "/menu") return next();
+  if (req.method === "POST" && /^\/customers(?:\/session)?$/.test(req.path)) return next();
+  if (req.method === "POST" && req.path === "/orders") return next();
+  if (req.method === "GET" && /^\/customers\/[^/]+\/orders$/.test(req.path)) return next();
+  return requireAdmin(req, res, next);
+});
+
+app.post("/api/customers/session", (req, res) => {
+  const error = validateCustomer(req.body);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const db = readDb();
+  let customer = db.customers.find(c => c.contact_number === req.body.contact_number);
+  if (customer) {
+    if (customer.full_name.toLowerCase() !== req.body.full_name.trim().toLowerCase()) return fail(res, 409, "This phone number is already registered with another customer", "contact_number");
+    customer.address = req.body.address.trim();
+    writeDb(db);
+    return ok(res, customer, "Customer session started");
+  }
+  customer = { id: nextId("C", db.customers), full_name: req.body.full_name.trim(), contact_number: req.body.contact_number, address: req.body.address.trim(), preferences: "", total_orders: 0 };
+  db.customers.push(customer); writeDb(db);
+  return ok(res, customer, "Customer registered", 201);
+});
+
+app.get("/api/customers/:id/orders", (req, res) => {
+  const db = readDb();
+  if (!db.customers.some(c => c.id === req.params.id)) return fail(res, 404, "Customer not found");
+  return ok(res, db.orders.filter(o => o.customer_id === req.params.id), "Customer orders retrieved");
+});
 
 // Health
 app.get("/api/health", (req, res) => ok(res, { service: "FOODHUB", uptime: process.uptime() }));
@@ -196,8 +267,15 @@ app.post("/api/orders", (req, res) => {
   const total = Number(items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2));
   const order = {
     id: nextId("O", db.orders), order_number: `ORD-${Date.now()}`, customer_id: customer.id, items,
-    total_amount: total, pickup_datetime: req.body.pickup_datetime || "", payment_status: req.body.payment_status || "unpaid",
-    order_status: req.body.order_status || "pending", notes: req.body.notes || "", created_at: new Date().toISOString()
+    total_amount: total,
+    fulfillment_type: req.body.fulfillment_type || "pickup",
+    delivery_location: req.body.fulfillment_type === "delivery" ? req.body.delivery_location.trim() : "",
+    scheduled_datetime: req.body.scheduled_datetime,
+    pickup_datetime: req.body.scheduled_datetime,
+    payment_status: req.body.payment_status || "unpaid",
+    order_status: req.body.order_status || "pending",
+    notes: req.body.notes || "",
+    created_at: new Date().toISOString()
   };
   items.forEach(line => {
     const menu = db.menuItems.find(m => m.id === line.menu_id);
@@ -214,7 +292,16 @@ app.put("/api/orders/:id", (req, res) => {
   if (req.body.order_status && !allowedStatuses.includes(req.body.order_status)) return fail(res, 422, "Invalid order status", "order_status");
   const allowedPayments = ["unpaid", "partial", "paid"];
   if (req.body.payment_status && !allowedPayments.includes(req.body.payment_status)) return fail(res, 422, "Invalid payment status", "payment_status");
-  db.orders[index] = { ...db.orders[index], pickup_datetime: req.body.pickup_datetime ?? db.orders[index].pickup_datetime, payment_status: req.body.payment_status ?? db.orders[index].payment_status, order_status: req.body.order_status ?? db.orders[index].order_status, notes: req.body.notes ?? db.orders[index].notes };
+  db.orders[index] = {
+    ...db.orders[index],
+    fulfillment_type: req.body.fulfillment_type ?? db.orders[index].fulfillment_type ?? "pickup",
+    delivery_location: req.body.delivery_location ?? db.orders[index].delivery_location ?? "",
+    scheduled_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
+    pickup_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
+    payment_status: req.body.payment_status ?? db.orders[index].payment_status,
+    order_status: req.body.order_status ?? db.orders[index].order_status,
+    notes: req.body.notes ?? db.orders[index].notes
+  };
   if (db.orders[index].order_status === "completed" && !db.sales.some(s => s.order_id === db.orders[index].id)) {
     db.sales.push({ id: nextId("S", db.sales), order_id: db.orders[index].id, transaction_date: new Date().toISOString().slice(0, 10), total_received: db.orders[index].total_amount, payment_method: req.body.payment_method || "cash" });
   }
