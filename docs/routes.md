@@ -1,50 +1,92 @@
-# API Routes — Maramag Home Food Pre-Order Manager
+# FOODHUB API Routes — Week 5
 
-**Base URL:** 
-**Response Standard:** `{ status, data, error }`
+**Base URL:** `/api`  
+**Response envelope:** `{ status, data, error, message }`
 
----
+Week 5 uses the pipeline:
 
-## 📋 Routing Table
+**Route → Validation Middleware → Thin Controller → Data/Service Layer → Response**
 
-| Method | Path | Handler | Story |
+## Public customer routes
+
+| Method | Path | Validation | Controller | Purpose |
+|---|---|---|---|---|
+| GET | `/menu` | — | `menuController.list` | View menu |
+| GET | `/menu/:id` | — | `menuController.show` | View one menu item |
+| POST | `/customers/session` | customer | `customerController.session` | Register/login customer |
+| POST | `/orders` | order | `orderController.create` | Place customer order |
+| GET | `/customers/:id/orders` | — | `customerController.orders` | View customer order history |
+
+## Admin CRUD routes
+
+Admin routes require a Bearer token from `POST /api/admin/login`.
+
+### Menu
+
+| Method | Path | Validation | Controller |
 |---|---|---|---|
-| GET | `/menu` | listMenu | View all menu items |
-| GET | `/menu/:id` | showMenu | View single menu item |
-| POST | `/menu` | createMenu | Add new menu item |
-| PUT | `/menu/:id` | updateMenu | Edit menu item |
-| DELETE | `/menu/:id` | deleteMenu | Remove menu item |
-| GET | `/orders` | listOrders | View all orders |
-| GET | `/orders/:id` | showOrder | View single order |
-| POST | `/orders` | createOrder | Place new order |
-| PUT | `/orders/:id` | updateOrder | Edit order |
-| DELETE | `/orders/:id` | deleteOrder | Cancel/remove order |
-| GET | `/customers` | listCustomers | View all customers |
-| GET | `/customers/:id` | showCustomer | View single customer |
-| POST | `/customers` | createCustomer | Add new customer |
-| PUT | `/customers/:id` | updateCustomer | Edit customer info |
-| DELETE | `/customers/:id` | deleteCustomer | Remove customer |
-| GET | `/sales` | listSales | View all sales records |
+| GET | `/menu` | — | `menuController.list` |
+| GET | `/menu/:id` | — | `menuController.show` |
+| POST | `/menu` | `validateMenu` | `menuController.create` |
+| PUT | `/menu/:id` | `validateMenu(partial)` | `menuController.update` |
+| DELETE | `/menu/:id` | — | `menuController.remove` |
 
----
+### Customers
 
-## 🍽️ Menu Items
+| Method | Path | Validation | Controller |
+|---|---|---|---|
+| GET | `/customers` | — | `customerController.list` |
+| GET | `/customers/:id` | — | `customerController.show` |
+| POST | `/customers` | `validateCustomer` | `customerController.create` |
+| PUT | `/customers/:id` | `validateCustomer(partial)` | `customerController.update` |
+| DELETE | `/customers/:id` | — | `customerController.remove` |
 
-### ✅ GET `/menu`
-**Request:** `GET /menu`
+### Orders
 
-**Response:**
+| Method | Path | Validation | Controller |
+|---|---|---|---|
+| GET | `/orders` | — | `orderController.list` |
+| GET | `/orders/:id` | — | `orderController.show` |
+| POST | `/orders` | `orderValidator` | `orderController.create` |
+| PUT | `/orders/:id` | `orderUpdateValidator` | `orderController.update` |
+| DELETE | `/orders/:id` | — | `orderController.remove` |
+
+## Reports
+
+| Method | Path | Controller |
+|---|---|---|
+| GET | `/sales` | `reportController.sales` |
+| GET | `/dashboard` | `reportController.dashboard` |
+
+## Authentication
+
+| Method | Path | Controller |
+|---|---|---|
+| POST | `/admin/login` | `authController.login` |
+| POST | `/admin/logout` | `authController.logout` |
+| GET | `/health` | server health handler |
+
+## Standard success response
+
 ```json
 {
-  "status": 200,
-  "data": {
-    "menuItems": [
-      { "id": "M001", "name": "Chicken Adobo", "price": 120.00, "description": "Braised chicken in soy sauce & vinegar" },
-      { "id": "M002", "name": "Pork Sinigang", "price": 150.00, "description": "Sour tamarind soup with pork & vegetables" },
-      { "id": "M003", "name": "Beef Caldereta", "price": 180.00, "description": "Spicy beef stew in tomato sauce" },
-      { "id": "M004", "name": "Fried Rice", "price": 35.00, "description": "Garlic fried rice" },
-      { "id": "M005", "name": "Grilled Fish", "price": 130.00, "description": "Fresh tilapia grilled to perfection" }
-    ]
-  },
-  "error": null
+  "status": 201,
+  "data": { "id": "M006" },
+  "error": null,
+  "message": "Menu item created"
 }
+```
+
+## Standard error response
+
+```json
+{
+  "status": 422,
+  "data": null,
+  "error": "Name must be 2–100 characters",
+  "field": "name",
+  "message": "Name must be 2–100 characters"
+}
+```
+
+The controller does not perform validation. Validation middleware places accepted input in `req.validatedBody`; the controller passes it to the service layer and shapes the response.
