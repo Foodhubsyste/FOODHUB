@@ -292,6 +292,39 @@ app.put("/api/orders/:id", (req, res) => {
   if (req.body.order_status && !allowedStatuses.includes(req.body.order_status)) return fail(res, 422, "Invalid order status", "order_status");
   const allowedPayments = ["unpaid", "partial", "paid"];
   if (req.body.payment_status && !allowedPayments.includes(req.body.payment_status)) return fail(res, 422, "Invalid payment status", "payment_status");
+  const previousStatus = db.orders[index].order_status;
+  const nextStatus = req.body.order_status ?? previousStatus;
+
+  if (nextStatus === "cancelled" && previousStatus !== "cancelled") {
+    for (const line of db.orders[index].items) {
+      const menu = db.menuItems.find(m => m.id === line.menu_id);
+      if (menu) {
+        menu.stock_quantity += Number(line.quantity || 0);
+        if (menu.stock_quantity > 0) menu.status = "available";
+      }
+    }
+    const customer = db.customers.find(c => c.id === db.orders[index].customer_id);
+    if (customer && customer.total_orders > 0) customer.total_orders -= 1;
+  }
+
+  if (previousStatus === "cancelled" && nextStatus !== "cancelled") {
+    for (const line of db.orders[index].items) {
+      const menu = db.menuItems.find(m => m.id === line.menu_id);
+      if (menu && menu.stock_quantity < Number(line.quantity || 0)) {
+        return fail(res, 409, `Not enough stock to reactivate this order for ${menu.name}`, "order_status");
+      }
+    }
+    for (const line of db.orders[index].items) {
+      const menu = db.menuItems.find(m => m.id === line.menu_id);
+      if (menu) {
+        menu.stock_quantity -= Number(line.quantity || 0);
+        if (menu.stock_quantity === 0) menu.status = "unavailable";
+      }
+    }
+    const customer = db.customers.find(c => c.id === db.orders[index].customer_id);
+    if (customer) customer.total_orders += 1;
+  }
+
   db.orders[index] = {
     ...db.orders[index],
     fulfillment_type: req.body.fulfillment_type ?? db.orders[index].fulfillment_type ?? "pickup",
@@ -299,7 +332,7 @@ app.put("/api/orders/:id", (req, res) => {
     scheduled_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
     pickup_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
     payment_status: req.body.payment_status ?? db.orders[index].payment_status,
-    order_status: req.body.order_status ?? db.orders[index].order_status,
+    order_status: nextStatus,
     notes: req.body.notes ?? db.orders[index].notes
   };
   if (db.orders[index].order_status === "completed" && !db.sales.some(s => s.order_id === db.orders[index].id)) {
@@ -311,6 +344,7 @@ app.delete("/api/orders/:id", (req, res) => {
   const db = readDb(); const index = db.orders.findIndex(x => x.id === req.params.id);
   if (index < 0) return fail(res, 404, "Order not found");
   if (db.orders[index].order_status !== "cancelled") return fail(res, 409, "Only cancelled orders can be deleted");
+  db.sales = db.sales.filter(s => s.order_id !== db.orders[index].id);
   db.orders.splice(index, 1); writeDb(db); return ok(res, null, "Order deleted");
 });
 
