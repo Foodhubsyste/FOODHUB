@@ -11,7 +11,11 @@ A complete CRUD web application for small home-based food sellers to manage menu
 - Automatic sales record when an order is completed
 - Sales records view
 - Persistent JSON data store in `data/db.json`
-- Responsive browser interface
+- Responsive browser interface with Admin and Customer dashboards
+- Customer cart, pickup/delivery checkout, scheduling, and order history
+- Admin order workflow: pending → confirmed → ready → completed/cancelled
+- Automatic stock deduction/restoration and sales synchronization
+- Automated Jest/Supertest regression tests and GitHub Actions CI
 - REST API under `/api`
 
 ## Run locally
@@ -57,3 +61,23 @@ For Railway, set these environment variables to change the credentials:
 - `ADMIN_PASSWORD`
 
 The admin login uses a server-side session token, while customer registration/session information is stored in the application's current JSON database.
+
+## Fully functional branch
+
+The repository includes a dedicated branch named `fully-functional-system` containing the complete demo-ready implementation and frontend fixes. Use this branch when testing the full FOODHUB workflow in VS Code.
+
+### Full workflow
+
+**Admin:** login → dashboard → menu CRUD → customer CRUD → order management → payment/status updates → sales/revenue.
+
+**Customer:** register/session → browse/search menu → cart → choose pickup or delivery → choose schedule → place order → view order history.
+
+### Test the system
+
+```bash
+npm install
+npm test
+npm start
+```
+
+The test suite also performs JavaScript syntax checks before running API regression tests.

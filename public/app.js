@@ -12,7 +12,7 @@ async function api(url,opt={}){
   if(!r.ok)throw Error(j.error||j.message||'Request failed');return j.data;
 }
 function toast(msg,type='success'){const x=document.createElement('div');x.className='toast-msg '+type;x.textContent=msg;$('#toast').appendChild(x);setTimeout(()=>x.remove(),3200)}
-function show(id){['roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el){el.classList.add('hidden');el.style.display='none'}});const target=$('#'+id);if(target){target.classList.remove('hidden');target.style.removeProperty('display')}}
+function show(id){['welcomeScreen','roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el)el.classList.toggle('hidden',x!==id)})}
 function table(headers,rows,empty='No records found.'){if(!rows.length)return '<div class="empty"><div style="font-size:30px">📭</div><b>'+empty+'</b><span>There is nothing to display yet.</span></div>';return '<div class="table-card"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
 
 function adminTab(name){$$('.page').forEach(x=>x.classList.toggle('active',x.id===name));$$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$('#pageTitle').textContent={dashboard:'Dashboard',menu:'Menu',customers:'Customers',orders:'Orders',sales:'Sales'}[name];if(window.innerWidth<=800)$('#sidebar').classList.remove('open')}
@@ -52,7 +52,7 @@ function changeCart(id,delta){
   renderCart();
 }
 function renderCart(){cart=cart.filter(c=>menu.some(i=>i.id===c.id&&i.stock_quantity>0));const total=cart.reduce((s,c)=>{const i=menu.find(x=>x.id===c.id);return s+i.price*c.quantity},0);$('#cartCount').textContent=cart.reduce((s,x)=>s+x.quantity,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=cart.length?cart.map(c=>{const i=menu.find(x=>x.id===c.id);if(!i)return '';return '<div class="cart-line"><div class="cart-line-main"><strong>'+esc(i.name)+'</strong><small>'+money(i.price)+' each</small></div><div class="qty"><button onclick="changeCart(\''+i.id+'\',-1)">−</button><b>'+c.quantity+'</b><button onclick="changeCart(\''+i.id+'\',1)">+</button></div></div>'}).join(''):'<div class="empty">🛒<br><b>Your cart is empty</b><span>Add something delicious!</span></div>'}
-async function formatSchedule(o){
+function formatSchedule(o){
   if(!o || !o.scheduled_datetime) return 'No schedule';
   const d=new Date(o.scheduled_datetime);
   return Number.isNaN(d.getTime()) ? esc(o.scheduled_datetime) : d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
@@ -63,10 +63,10 @@ function checkoutForm(){
   const now=new Date();
   const minDate=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
   const defaultDate=new Date(now.getTime()+60*60*1000-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const modalHtml='<div class="modal-head"><div><h2>Order Details</h2><small class="modal-subtitle">Choose how and when you want to receive your food.</small></div><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="checkoutForm" class="form-grid"><div class="form-field full-field"><span class="field-title">FULFILLMENT METHOD</span><div class="fulfillment-grid"><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="pickup" checked><span>🏪 <b>Pick Up</b><small>Collect your order at FOODHUB</small></span></label><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="delivery"><span>🚚 <b>Delivery</b><small>We'll deliver to your location</small></span></label></div></div><label id="deliveryLocationField" class="form-field full-field hidden">DELIVERY LOCATION<textarea id="deliveryLocation" name="delivery_location" maxlength="250" placeholder="Complete delivery address, landmark, barangay..."></textarea></label><label class="form-field">DATE<input id="orderDate" name="order_date" type="date" min="'+minDate+'" value="'+defaultDate+'" required></label><label class="form-field">TIME<input id="orderTime" name="order_time" type="time" required></label><div class="schedule-note full-field">Please choose the date and time you want your order ready for pickup or delivered.</div><div id="checkoutError" class="form-error full-field"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Back</button><button class="primary-btn">Place Order</button></div></form></div>';
+  const modalHtml='<div class="modal-head"><div><h2>Order Details</h2><small class="modal-subtitle">Choose how and when you want to receive your food.</small></div><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="checkoutForm" class="form-grid"><div class="form-field full-field"><span class="field-title">FULFILLMENT METHOD</span><div class="fulfillment-grid"><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="pickup" checked><span>🏪 <b>Pick Up</b><small>Collect your order at FOODHUB</small></span></label><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="delivery"><span>🚚 <b>Delivery</b><small>We will deliver to your location</small></span></label></div></div><label id="deliveryLocationField" class="form-field full-field hidden">DELIVERY LOCATION<textarea id="deliveryLocation" name="delivery_location" maxlength="250" placeholder="Complete delivery address, landmark, barangay..."></textarea></label><label class="form-field">DATE<input id="orderDate" name="order_date" type="date" min="'+minDate+'" value="'+defaultDate+'" required></label><label class="form-field">TIME<input id="orderTime" name="order_time" type="time" required></label><div class="schedule-note full-field">Please choose the date and time you want your order ready for pickup or delivered.</div><div id="checkoutError" class="form-error full-field"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Back</button><button class="primary-btn">Place Order</button></div></form></div>';
   openModal(modalHtml);
   const toggle=()=>{const delivery=$('input[name="fulfillment_type"]:checked').value==='delivery';$('#deliveryLocationField').classList.toggle('hidden',!delivery);$('#deliveryLocation').required=delivery};
-  $('input[name="fulfillment_type"]').forEach(r=>r.onchange=toggle);
+  $$('input[name="fulfillment_type"]').forEach(r=>r.onchange=toggle);
   toggle();
   $('#checkoutForm').onsubmit=async e=>{e.preventDefault();$('#checkoutError').textContent='';const f=new FormData(e.target),date=f.get('order_date'),time=f.get('order_time');const scheduled=date+'T'+time,delivery=f.get('fulfillment_type')==='delivery';if(!date||!time)return $('#checkoutError').textContent='Please choose both a date and time.';if(delivery&&!String(f.get('delivery_location')||'').trim())return $('#checkoutError').textContent='Please enter the delivery location.';if(new Date(scheduled).getTime()<Date.now())return $('#checkoutError').textContent='Please choose a future date and time.';try{await api('/api/orders',{method:'POST',body:JSON.stringify({customer_id:currentCustomer.id,items:cart.map(c=>({menu_id:c.id,quantity:c.quantity})),fulfillment_type:f.get('fulfillment_type'),delivery_location:String(f.get('delivery_location')||'').trim(),scheduled_datetime:scheduled})});cart=[];closeModal();await loadCustomer();toast(delivery?'Delivery order placed!':'Pickup order placed!')}catch(err){$('#checkoutError').textContent=err.message}};
 }
@@ -79,12 +79,12 @@ function setup(){
   const bind=(selector,event,handler)=>{const el=$(selector);if(el)el.addEventListener(event,handler);};
   bind('#adminChoice','click',()=>show('adminLogin'));
   bind('#customerChoice','click',()=>show('customerEntry'));
-  $('[data-back="role"]').forEach(b=>b.onclick=()=>show('roleScreen'));
+  $$('[data-back="role"]').forEach(b=>b.onclick=()=>show('roleScreen'));
   bind('#adminLoginForm','submit',async e=>{e.preventDefault();$('#loginError').textContent='';try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('#adminUsername').value,password:$('#adminPassword').value})});adminToken=d.token;localStorage.setItem('foodhub_admin_token',adminToken);show('adminApp');await loadAdmin()}catch(err){$('#loginError').textContent=err.message}});
   bind('#customerEntryForm','submit',async e=>{e.preventDefault();$('#customerError').textContent='';try{const d=await api('/api/customers/session',{method:'POST',body:JSON.stringify({full_name:$('#customerName').value,contact_number:$('#customerPhone').value,address:$('#customerAddress').value})});currentCustomer=d;localStorage.setItem('foodhub_customer',JSON.stringify(d));$('#customerGreeting').textContent='Hi, '+d.full_name.split(' ')[0]+' 👋';show('customerApp');await loadCustomer()}catch(err){$('#customerError').textContent=err.message}});
   bind('#adminLogout','click',async()=>{try{await api('/api/admin/logout',{method:'POST'})}catch(_){}logoutAdmin()});
   bind('#customerLogout','click',logoutCustomer);
-  $('.nav').forEach(b=>b.onclick=()=>adminTab(b.dataset.tab));$('[data-tab-link]').forEach(b=>b.onclick=()=>adminTab(b.dataset.tabLink));
+  $$('.nav').forEach(b=>b.onclick=()=>adminTab(b.dataset.tab));$$('[data-tab-link]').forEach(b=>b.onclick=()=>adminTab(b.dataset.tabLink));
   bind('#menuToggle','click',()=>$('#sidebar').classList.toggle('open'));
   bind('#addMenuBtn','click',()=>menuForm());bind('#addCustomerBtn','click',()=>customerForm());
   bind('#menuSearch','input',renderMenu);bind('#menuFilter','change',renderMenu);bind('#customerSearch','input',renderCustomers);bind('#orderSearch','input',renderOrders);bind('#orderFilter','change',renderOrders);
@@ -100,7 +100,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     const welcome=$('#welcomeScreen');
     if(!welcome || welcome.classList.contains('hidden')) return;
     welcome.classList.add('hidden');
-    welcome.style.display='none';
+    welcome.style.removeProperty('display');
     const savedCustomer=localStorage.getItem('foodhub_customer');
     if(adminToken){show('adminApp');loadAdmin()}
     else if(savedCustomer){try{currentCustomer=JSON.parse(savedCustomer);$('#customerGreeting').textContent='Hi, '+currentCustomer.full_name.split(' ')[0]+' 👋';show('customerApp');loadCustomer()}catch(_){localStorage.removeItem('foodhub_customer');show('roleScreen')}}
@@ -109,3 +109,5 @@ window.addEventListener('DOMContentLoaded',()=>{
   setTimeout(enterApp,3000);
   try{setup()}catch(error){console.error('FOODHUB setup error:',error)}
 });
+
+// CI selector regression fix
