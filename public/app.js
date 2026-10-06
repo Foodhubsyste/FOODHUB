@@ -12,7 +12,7 @@ async function api(url,opt={}){
   if(!r.ok)throw Error(j.error||j.message||'Request failed');return j.data;
 }
 function toast(msg,type='success'){const x=document.createElement('div');x.className='toast-msg '+type;x.textContent=msg;$('#toast').appendChild(x);setTimeout(()=>x.remove(),3200)}
-function show(id){['roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el){el.classList.add('hidden');el.style.display='none'}});const target=$('#'+id);if(target){target.classList.remove('hidden');target.style.removeProperty('display')}}
+function show(id){['welcomeScreen','roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el)el.classList.toggle('hidden',x!==id)})}
 function table(headers,rows,empty='No records found.'){if(!rows.length)return '<div class="empty"><div style="font-size:30px">📭</div><b>'+empty+'</b><span>There is nothing to display yet.</span></div>';return '<div class="table-card"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
 
 function adminTab(name){$$('.page').forEach(x=>x.classList.toggle('active',x.id===name));$$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$('#pageTitle').textContent={dashboard:'Dashboard',menu:'Menu',customers:'Customers',orders:'Orders',sales:'Sales'}[name];if(window.innerWidth<=800)$('#sidebar').classList.remove('open')}
@@ -52,7 +52,7 @@ function changeCart(id,delta){
   renderCart();
 }
 function renderCart(){cart=cart.filter(c=>menu.some(i=>i.id===c.id&&i.stock_quantity>0));const total=cart.reduce((s,c)=>{const i=menu.find(x=>x.id===c.id);return s+i.price*c.quantity},0);$('#cartCount').textContent=cart.reduce((s,x)=>s+x.quantity,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=cart.length?cart.map(c=>{const i=menu.find(x=>x.id===c.id);if(!i)return '';return '<div class="cart-line"><div class="cart-line-main"><strong>'+esc(i.name)+'</strong><small>'+money(i.price)+' each</small></div><div class="qty"><button onclick="changeCart(\''+i.id+'\',-1)">−</button><b>'+c.quantity+'</b><button onclick="changeCart(\''+i.id+'\',1)">+</button></div></div>'}).join(''):'<div class="empty">🛒<br><b>Your cart is empty</b><span>Add something delicious!</span></div>'}
-async function formatSchedule(o){
+function formatSchedule(o){
   if(!o || !o.scheduled_datetime) return 'No schedule';
   const d=new Date(o.scheduled_datetime);
   return Number.isNaN(d.getTime()) ? esc(o.scheduled_datetime) : d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
@@ -100,7 +100,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     const welcome=$('#welcomeScreen');
     if(!welcome || welcome.classList.contains('hidden')) return;
     welcome.classList.add('hidden');
-    welcome.style.display='none';
+    welcome.style.removeProperty('display');
     const savedCustomer=localStorage.getItem('foodhub_customer');
     if(adminToken){show('adminApp');loadAdmin()}
     else if(savedCustomer){try{currentCustomer=JSON.parse(savedCustomer);$('#customerGreeting').textContent='Hi, '+currentCustomer.full_name.split(' ')[0]+' 👋';show('customerApp');loadCustomer()}catch(_){localStorage.removeItem('foodhub_customer');show('roleScreen')}}
