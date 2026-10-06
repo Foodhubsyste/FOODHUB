@@ -273,6 +273,7 @@ app.post("/api/orders", (req, res) => {
     scheduled_datetime: req.body.scheduled_datetime,
     pickup_datetime: req.body.scheduled_datetime,
     payment_status: req.body.payment_status || "unpaid",
+    payment_method: req.body.payment_method || "cash",
     order_status: req.body.order_status || "pending",
     notes: req.body.notes || "",
     created_at: new Date().toISOString()
@@ -332,11 +333,22 @@ app.put("/api/orders/:id", (req, res) => {
     scheduled_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
     pickup_datetime: req.body.scheduled_datetime ?? db.orders[index].scheduled_datetime ?? db.orders[index].pickup_datetime ?? "",
     payment_status: req.body.payment_status ?? db.orders[index].payment_status,
+    payment_method: req.body.payment_method ?? db.orders[index].payment_method ?? "cash",
     order_status: nextStatus,
     notes: req.body.notes ?? db.orders[index].notes
   };
+  // Keep sales synchronized with completion/cancellation.
   if (db.orders[index].order_status === "completed" && !db.sales.some(s => s.order_id === db.orders[index].id)) {
-    db.sales.push({ id: nextId("S", db.sales), order_id: db.orders[index].id, transaction_date: new Date().toISOString().slice(0, 10), total_received: db.orders[index].total_amount, payment_method: req.body.payment_method || "cash" });
+    db.sales.push({
+      id: nextId("S", db.sales),
+      order_id: db.orders[index].id,
+      transaction_date: new Date().toISOString().slice(0, 10),
+      total_received: db.orders[index].total_amount,
+      payment_method: db.orders[index].payment_method || req.body.payment_method || "cash"
+    });
+  }
+  if (db.orders[index].order_status !== "completed") {
+    db.sales = db.sales.filter(s => s.order_id !== db.orders[index].id);
   }
   writeDb(db); return ok(res, db.orders[index], "Order updated");
 });
