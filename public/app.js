@@ -42,9 +42,22 @@ function orderEdit(id){const x=orders.find(a=>a.id===id);openModal('<div class="
 
 function renderCustomerMenu(){const q=($('#customerMenuSearch')?.value||'').toLowerCase();const items=menu.filter(x=>x.status==='available'&&x.stock_quantity>0&&[x.name,x.category].join(' ').toLowerCase().includes(q));$('#customerMenu').innerHTML=items.length?items.map(x=>'<article class="food-card"><div class="food-image">🍲</div><div class="food-body"><span class="eyebrow">'+esc(x.category)+'</span><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'Home-cooked favorite')+'</p><div class="food-meta"><span class="food-price">'+money(x.price)+'</span><button class="add-food" onclick="addCart(\''+x.id+'\')">＋ Add</button></div></div></article>').join(''):'<div class="empty">No available food found.</div>'}
 function addCart(id){const item=menu.find(x=>x.id===id);const existing=cart.find(x=>x.id===id);if(existing){if(existing.quantity<item.stock_quantity)existing.quantity++;else return toast('Maximum available stock reached.','error')}else cart.push({id,quantity:1});renderCart();toast(item.name+' added to your order.')}
-function changeCart(id,delta){const c=cart.find(x=>x.id===id),item=menu.find(x=>x.id===id);if(!c)return;c.quantity+=delta;if(c.quantity>item.stock_quantity)c.quantity=item.stock_quantity;if(c.quantity<=0)cart=cart.filter(x=>x.id!==id);renderCart()}
-function renderCart(){const total=cart.reduce((s,c)=>{const i=menu.find(x=>x.id===c.id);return s+i.price*c.quantity},0);$('#cartCount').textContent=cart.reduce((s,x)=>s+x.quantity,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=cart.length?cart.map(c=>{const i=menu.find(x=>x.id===c.id);return '<div class="cart-line"><div class="cart-line-main"><strong>'+esc(i.name)+'</strong><small>'+money(i.price)+' each</small></div><div class="qty"><button onclick="changeCart(\''+i.id+'\',-1)">−</button><b>'+c.quantity+'</b><button onclick="changeCart(\''+i.id+'\',1)">+</button></div></div>'}).join(''):'<div class="empty">🛒<br><b>Your cart is empty</b><span>Add something delicious!</span></div>'}
-async function loadCustomer(){menu=await api('/api/menu');renderCustomerMenu();renderCart();await loadCustomerOrders()}
+function changeCart(id,delta){
+  const c=cart.find(x=>x.id===id),item=menu.find(x=>x.id===id);
+  if(!c)return;
+  if(!item){cart=cart.filter(x=>x.id!==id);return renderCart()}
+  c.quantity+=delta;
+  if(c.quantity>item.stock_quantity)c.quantity=item.stock_quantity;
+  if(c.quantity<=0)cart=cart.filter(x=>x.id!==id);
+  renderCart();
+}
+function renderCart(){cart=cart.filter(c=>menu.some(i=>i.id===c.id&&i.stock_quantity>0));const total=cart.reduce((s,c)=>{const i=menu.find(x=>x.id===c.id);return s+i.price*c.quantity},0);$('#cartCount').textContent=cart.reduce((s,x)=>s+x.quantity,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=cart.length?cart.map(c=>{const i=menu.find(x=>x.id===c.id);if(!i)return '';return '<div class="cart-line"><div class="cart-line-main"><strong>'+esc(i.name)+'</strong><small>'+money(i.price)+' each</small></div><div class="qty"><button onclick="changeCart(\''+i.id+'\',-1)">−</button><b>'+c.quantity+'</b><button onclick="changeCart(\''+i.id+'\',1)">+</button></div></div>'}).join(''):'<div class="empty">🛒<br><b>Your cart is empty</b><span>Add something delicious!</span></div>'}
+async function formatSchedule(o){
+  if(!o || !o.scheduled_datetime) return 'No schedule';
+  const d=new Date(o.scheduled_datetime);
+  return Number.isNaN(d.getTime()) ? esc(o.scheduled_datetime) : d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
+}
+function loadCustomer(){return api('/api/menu').then(data=>{menu=data;renderCustomerMenu();renderCart();return loadCustomerOrders()})}
 async function loadCustomerOrders(){if(!currentCustomer)return;const os=await api('/api/customers/'+currentCustomer.id+'/orders');$('#customerOrders').innerHTML=table(['Order','Items','Total','Fulfillment','Schedule'],os.map(o=>'<tr><td><b>'+esc(o.order_number)+'</b></td><td>'+o.items.map(i=>esc(i.name)+' × '+i.quantity).join('<br>')+'</td><td><b>'+money(o.total_amount)+'</b></td><td><span class="badge info">'+(o.fulfillment_type==='delivery'?'🚚 Delivery':'🏪 Pickup')+'</span>'+(o.delivery_location?'<small style="display:block;color:#8d95a0;margin-top:4px">📍 '+esc(o.delivery_location)+'</small>':'')+'</td><td>'+formatSchedule(o)+'</td></tr>'),'You have not placed any orders yet.')}
 function checkoutForm(){
   const now=new Date();
