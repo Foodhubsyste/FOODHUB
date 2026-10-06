@@ -4,6 +4,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>'₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const cls=s=>({completed:'success',ready:'info',confirmed:'info',pending:'warning',cancelled:'danger',paid:'success',partial:'warning',unpaid:'warning'}[String(s).toLowerCase()]||'info');
+const UI=window.FoodHubComponents;
 
 async function api(url,opt={}){
   const headers={'Content-Type':'application/json',...(opt.headers||{})};
@@ -13,16 +14,23 @@ async function api(url,opt={}){
 }
 function toast(msg,type='success'){const x=document.createElement('div');x.className='toast-msg '+type;x.textContent=msg;$('#toast').appendChild(x);setTimeout(()=>x.remove(),3200)}
 function show(id){['welcomeScreen','roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el)el.classList.toggle('hidden',x!==id)})}
-function table(headers,rows,empty='No records found.'){if(!rows.length)return '<div class="empty"><div style="font-size:30px">📭</div><b>'+empty+'</b><span>There is nothing to display yet.</span></div>';return '<div class="table-card"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>'}
+function table(headers,rows,empty='No records found.'){return UI.table(headers,rows,empty,'There is nothing to display yet.')}
 
 function adminTab(name){$$('.page').forEach(x=>x.classList.toggle('active',x.id===name));$$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$('#pageTitle').textContent={dashboard:'Dashboard',menu:'Menu',customers:'Customers',orders:'Orders',sales:'Sales'}[name];if(window.innerWidth<=800)$('#sidebar').classList.remove('open')}
 
+function setAdminState(state,message=''){
+  const ids=['stats','recentOrders','stockAlerts','menuList','customerList','orderList','salesList'];
+  ids.forEach(id=>{const el=$('#'+id);if(!el)return;el.innerHTML=state==='loading'?UI.loadingState('Loading '+id.replace(/([A-Z])/g,' $1').toLowerCase()+'...'):UI.errorState(message||'Please try again.')});
+}
+
 async function loadAdmin(){
-  try{[menu,customers,orders,sales]=await Promise.all([api('/api/menu'),api('/api/customers'),api('/api/orders'),api('/api/sales')]);renderAdmin();const d=await api('/api/dashboard');renderStats(d)}catch(e){if(e.message.includes('login'))logoutAdmin();else toast(e.message,'error')}
+  setAdminState('loading');
+  try{[menu,customers,orders,sales]=await Promise.all([api('/api/menu'),api('/api/customers'),api('/api/orders'),api('/api/sales')]);renderAdmin();const d=await api('/api/dashboard');renderStats(d)}
+  catch(e){if(e.message.includes('login'))logoutAdmin();else{setAdminState('error',e.message);toast(e.message,'error')}}
 }
 function renderStats(d){
   const a=[['🍽','Menu Items',d.menu_count,'Catalog'],['♙','Customers',d.customer_count,'Registered'],['▤','Orders',d.order_count,'All orders'],['₱','Revenue',money(d.revenue),'Completed sales'],['◷','Pending',d.pending_orders,'Needs attention'],['✓','Completed',d.completed_orders,'Finished'],['⚠','Low Stock',d.low_stock,'Inventory alert']];
-  $('#stats').innerHTML=a.map(x=>'<div class="stat"><small>'+x[0]+' &nbsp; '+x[1]+'</small><strong>'+x[2]+'</strong><i>'+x[3]+'</i></div>').join('');
+  $('#stats').innerHTML=a.map(x=>UI.stat(x[0],x[1],x[2],x[3])).join('');
   const recent=[...orders].slice(-5).reverse();
   $('#recentOrders').innerHTML=recent.length?recent.map(o=>'<div class="row"><div class="row-icon">🧾</div><div class="row-main"><strong>'+esc(o.order_number)+'</strong><small>'+esc(o.customer?.full_name||o.customer_id)+'</small></div><span class="badge '+cls(o.order_status)+'">'+esc(o.order_status)+'</span><b>'+money(o.total_amount)+'</b></div>').join(''):'<div class="empty">No orders yet.</div>';
   const low=menu.filter(x=>Number(x.stock_quantity)<=5);$('#stockAlerts').innerHTML=low.length?low.map(x=>'<div class="row"><div class="row-icon">🍽</div><div class="row-main"><strong>'+esc(x.name)+'</strong><small>'+esc(x.category)+'</small></div><span class="badge '+(x.stock_quantity===0?'danger':'warning')+'">'+x.stock_quantity+' left</span></div>').join(''):'<div class="empty">✨ Stock looks good.</div>';
@@ -51,14 +59,34 @@ function changeCart(id,delta){
   if(c.quantity<=0)cart=cart.filter(x=>x.id!==id);
   renderCart();
 }
-function renderCart(){cart=cart.filter(c=>menu.some(i=>i.id===c.id&&i.stock_quantity>0));const total=cart.reduce((s,c)=>{const i=menu.find(x=>x.id===c.id);return s+i.price*c.quantity},0);$('#cartCount').textContent=cart.reduce((s,x)=>s+x.quantity,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=cart.length?cart.map(c=>{const i=menu.find(x=>x.id===c.id);if(!i)return '';return '<div class="cart-line"><div class="cart-line-main"><strong>'+esc(i.name)+'</strong><small>'+money(i.price)+' each</small></div><div class="qty"><button onclick="changeCart(\''+i.id+'\',-1)">−</button><b>'+c.quantity+'</b><button onclick="changeCart(\''+i.id+'\',1)">+</button></div></div>'}).join(''):'<div class="empty">🛒<br><b>Your cart is empty</b><span>Add something delicious!</span></div>'}
+function renderCart(){cart=cart.filter(c=>menu.some(i=>i.id===c.id&&i.stock_quantity>0));const total=cart.reduce((s,c)=>{const i=menu.find(x=>x.id===c.id);return s+i.price*c.quantity},0);$('#cartCount').textContent=cart.reduce((s,x)=>s+x.quantity,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=cart.length?cart.map(c=>{const i=menu.find(x=>x.id===c.id);if(!i)return '';return '<div class="cart-line"><div class="cart-line-main"><strong>'+esc(i.name)+'</strong><small>'+money(i.price)+' each</small></div><div class="qty"><button onclick="changeCart(\''+i.id+'\',-1)">−</button><b>'+c.quantity+'</b><button onclick="changeCart(\''+i.id+'\',1)">+</button></div></div>'}).join(''):UI.emptyState('Your cart is empty','Add something delicious!','🛒')}
 function formatSchedule(o){
   if(!o || !o.scheduled_datetime) return 'No schedule';
   const d=new Date(o.scheduled_datetime);
   return Number.isNaN(d.getTime()) ? esc(o.scheduled_datetime) : d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
 }
-function loadCustomer(){return api('/api/menu').then(data=>{menu=data;renderCustomerMenu();renderCart();return loadCustomerOrders()})}
-async function loadCustomerOrders(){if(!currentCustomer)return;const os=await api('/api/customers/'+currentCustomer.id+'/orders');$('#customerOrders').innerHTML=table(['Order','Items','Total','Fulfillment','Schedule'],os.map(o=>'<tr><td><b>'+esc(o.order_number)+'</b></td><td>'+o.items.map(i=>esc(i.name)+' × '+i.quantity).join('<br>')+'</td><td><b>'+money(o.total_amount)+'</b></td><td><span class="badge info">'+(o.fulfillment_type==='delivery'?'🚚 Delivery':'🏪 Pickup')+'</span>'+(o.delivery_location?'<small style="display:block;color:#8d95a0;margin-top:4px">📍 '+esc(o.delivery_location)+'</small>':'')+'</td><td>'+formatSchedule(o)+'</td></tr>'),'You have not placed any orders yet.')}
+function setCustomerState(state,message=''){
+  const ids=['customerMenu','customerOrders'];
+  ids.forEach(id=>{const el=$('#'+id);if(!el)return;el.innerHTML=state==='loading'?UI.loadingState('Loading '+id.replace(/([A-Z])/g,' $1').toLowerCase()+'...'):UI.errorState(message||'Please try again.')});
+}
+
+async function loadCustomer(){
+  setCustomerState('loading');
+  try{
+    const data=await api('/api/menu');
+    menu=data;
+    renderCustomerMenu();
+    renderCart();
+    await loadCustomerOrders();
+  }catch(e){
+    setCustomerState('error',e.message);
+    toast(e.message,'error');
+  }
+}
+async function loadCustomerOrders(){
+  if(!currentCustomer)return;
+  const os=await api('/api/customers/'+currentCustomer.id+'/orders');
+  $('#customerOrders').innerHTML=table(['Order','Items','Total','Fulfillment','Schedule'],os.map(o=>'<tr><td><b>'+esc(o.order_number)+'</b></td><td>'+o.items.map(i=>esc(i.name)+' × '+i.quantity).join('<br>')+'</td><td><b>'+money(o.total_amount)+'</b></td><td><span class="badge info">'+(o.fulfillment_type==='delivery'?'🚚 Delivery':'🏪 Pickup')+'</span>'+(o.delivery_location?'<small style="display:block;color:#8d95a0;margin-top:4px">📍 '+esc(o.delivery_location)+'</small>':'')+'</td><td>'+formatSchedule(o)+'</td></tr>'),'You have not placed any orders yet.')}
 function checkoutForm(){
   const now=new Date();
   const minDate=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);

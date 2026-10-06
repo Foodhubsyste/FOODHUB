@@ -12,6 +12,7 @@ A complete CRUD web application for small home-based food sellers to manage menu
 - Sales records view
 - Persistent JSON data store in `data/db.json`
 - Responsive browser interface with Admin and Customer dashboards
+- Week 6 reusable view components with loading, empty, and error states
 - Customer cart, pickup/delivery checkout, scheduling, and order history
 - Admin order workflow: pending → confirmed → ready → completed/cancelled
 - Automatic stock deduction/restoration and sales synchronization
@@ -36,6 +37,7 @@ Open `http://localhost:4444`.
 ## Project structure
 - `server.js` — Express server and REST API
 - `public/index.html` — application interface
+- `public/components.js` — reusable Week 6 view components
 - `public/app.js` — frontend behavior and API calls
 - `public/styles.css` — UI styling
 - `data/db.json` — persistent application data
