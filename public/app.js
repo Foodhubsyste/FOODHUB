@@ -82,7 +82,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Always dismiss the welcome screen after exactly 3 seconds.
   // Keep this timer independent so a later UI setup error cannot leave the splash screen stuck.
   const enterApp=()=>{
-    $('#welcomeScreen').classList.add('hidden');
+    // Only perform the automatic transition if the splash screen is still visible.
+    // This prevents the 3-second timer from overriding a user's Admin/Customer choice.
+    const welcome=$('#welcomeScreen');
+    if(!welcome || welcome.classList.contains('hidden')) return;
+    welcome.classList.add('hidden');
     const savedCustomer=localStorage.getItem('foodhub_customer');
     if(adminToken){show('adminApp');loadAdmin()}
     else if(savedCustomer){try{currentCustomer=JSON.parse(savedCustomer);$('#customerGreeting').textContent='Hi, '+currentCustomer.full_name.split(' ')[0]+' 👋';show('customerApp');loadCustomer()}catch(_){localStorage.removeItem('foodhub_customer');show('roleScreen')}}
