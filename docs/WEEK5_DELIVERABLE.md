@@ -1,32 +1,88 @@
-# Week 5 — Deliverable 2
-## FOODHUB: Controllers, Logic & Automated Tests
+# FOODHUB — Week 5 Deliverable 2
 
-This document maps the FOODHUB implementation to the Week 5 lab requirements.
+## Backend Controllers, Routing, Validation and Automated Tests
 
-> **Source basis:** Week 5 requires thin controllers, standardized responses, Arrange–Act–Assert tests, meaningful happy-path/failure/edge coverage, a green suite, and an individual AI-off checkpoint. The checkpoint must be completed individually and honestly by each student.
+### Objectives
 
-### 1. Week 5 objectives
+Week 5 completes the logic layer using the required pipeline:
 
-- Route → validation → controller/logic → data → response pipeline
-- Standard success and error response envelopes
-- Automated tests using Arrange–Act–Assert
-- Happy-path, validation-failure, and edge-case coverage
-- No merge to `main` while CI is red
+**Route → Validation → Thin Controller → Service/Data Layer → Response**
 
-### 2. FOODHUB response standard
+The FOODHUB implementation now uses real controllers and services instead of placeholder controller stubs.
 
-FOODHUB API responses use the following envelope:
+## 1. Thin controller architecture
+
+Implemented:
+
+- `controllers/menuController.js`
+- `controllers/customerController.js`
+- `controllers/orderController.js`
+- `controllers/reportController.js`
+- `controllers/authController.js`
+
+Controllers are intentionally small. They:
+
+1. receive validated request data;
+2. call the service/data layer;
+3. translate service results into the standard response envelope.
+
+Validation and persistence are not duplicated inside the controllers.
+
+## 2. Validation middleware
+
+Implemented in:
+
+`middleware/validation.js`
+
+Validation runs before the controller and stores accepted input in:
+
+`req.validatedBody`
+
+The middleware covers:
+
+- menu create/update rules;
+- customer create/update rules;
+- order create rules;
+- order update status/payment/fulfillment rules;
+- delivery-location validation.
+
+Invalid requests return HTTP 422 using the standard error envelope.
+
+## 3. Service/data layer
+
+Implemented in:
+
+- `services/database.js`
+- `services/foodhubService.js`
+
+The service layer performs the actual application work:
+
+- CRUD operations;
+- customer session creation/update;
+- order creation;
+- stock checking and deduction;
+- cancellation stock restoration;
+- cancelled-order reactivation checks;
+- customer order totals;
+- completed-order sales synchronization;
+- dashboard calculations.
+
+This keeps persistence/business logic outside the controllers.
+
+## 4. Standard response envelope
+
+### Success
 
 ```json
 {
-  "status": 200,
+  "status": 201,
   "data": {},
   "error": null,
   "message": "Success"
 }
 ```
 
-Validation failures use the same envelope:
+### Validation/error
 
 ```json
 {
@@ -38,82 +94,53 @@ Validation failures use the same envelope:
 }
 ```
 
-### 3. Logic covered by the application
+All controller responses use this consistent shape.
 
-#### Menu
-- GET all menu items
-- GET one menu item
-- POST a menu item with validation
-- PUT a menu item with validation
-- DELETE a menu item with order-history protection
+## 5. Automated tests
 
-#### Customers
-- GET all customers
-- GET one customer
-- POST a customer with validation
-- PUT a customer with validation
-- DELETE a customer with order-history protection
-
-#### Orders
-- GET all orders
-- GET one order
-- POST an order with validation and stock checks
-- PUT an order with status/payment/stock/sales synchronization
-- DELETE only cancelled orders
-
-#### Sales
-- Completed orders create a sale record.
-- Orders that stop being completed are removed from sales.
-
-### 4. Arrange–Act–Assert test coverage
-
-The automated suite covers:
+`week5.test.js` uses Arrange–Act–Assert and covers:
 
 | Area | Happy path | Validation/failure | Edge/business case |
 |---|---|---|---|
-| Admin authentication | Login succeeds | Invalid credentials rejected | Protected API rejects missing token |
-| Customer | Session/register succeeds | Invalid customer data rejected | Duplicate/invalid contact handling |
-| Menu | Menu can be read | Invalid menu/order item rejected | Stock reaches zero / unavailable |
-| Orders | Pickup order succeeds | Invalid order item rejected | Cancellation restores stock |
-| Delivery | Delivery order succeeds | Missing delivery location rejected | Fulfillment is preserved |
-| Sales | Completed order creates sale | Non-completed order removes sale | Payment method is preserved |
-| Frontend | Required files/bindings exist | Invalid legacy bindings are rejected | Multi-element selectors use `$$` |
+| Menu | Create item | Missing name | Zero price |
+| Customer | Create customer | Invalid phone | Short address |
+| Orders | Pickup order | Missing menu item | Zero quantity |
+| Delivery | Delivery order | Invalid delivery data | Fulfillment/location preserved |
+| API | Successful response | Standard error envelope | Consistent response fields |
+| Architecture | Routes use controllers | Controllers avoid validation | Controllers delegate to services |
 
-### 5. CI / merge rule
+Existing project tests also cover authentication, stock restoration, sales synchronization, frontend bindings, and fulfillment display.
 
-GitHub Actions runs the test suite on pushes and pull requests to `main`.
+## 6. CI / merge rule
 
-**Rule:** no code should be merged into `main` while the test suite is failing.
+The project uses GitHub Actions to run the automated test suite on pushes and pull requests to `main`.
 
-### 6. Individual AI-off checkpoint
+The `pretest` script syntax-checks the server, frontend, validation middleware, services, controllers and routes before Jest runs.
 
-The Week 5 handout requires each team member to complete a small route task **alone, without AI, without teammate help, and without copy-paste**, while the instructor observes.
+**Rule:** a failing test suite blocks the Week 5 pull request.
 
-**Status: PENDING INDIVIDUAL COMPLETION**
+## 7. AI-assisted implementation
 
-Do not mark this checkpoint as completed in the repository unless the student actually performed it under the instructor's rules.
+This Week 5 implementation is being completed with **AI ON**, according to the current project instruction provided by the student.
 
-Suggested evidence to record after the real checkpoint:
+The repository therefore records the actual AI-assisted implementation rather than claiming that AI was not used.
 
-- Student/member:
-- Route assigned:
-- Validation handled:
-- Controller/logic implemented:
-- Test written:
-- Instructor verification:
-- Date:
+If the instructor separately requires an observed individual checkpoint, that checkpoint should only be marked complete after the student performs and verifies it according to the instructor's current rules.
 
-### 7. Deliverable 2 checklist
+## 8. Week 5 checklist
 
-- [x] Routing structure documented
-- [x] Validation rules documented
-- [x] CRUD logic implemented in FOODHUB
-- [x] Standard API response envelope implemented
-- [x] Automated tests exist
-- [x] CI blocks failing test suites
-- [ ] Each member's AI-off checkpoint completed and verified
-- [ ] Final Deliverable 2 submission assembled
+- [x] Routing structure implemented
+- [x] Validation middleware implemented
+- [x] Thin controllers implemented
+- [x] Service/data layer implemented
+- [x] Standard success/error response envelope
+- [x] CRUD routes wired end-to-end
+- [x] Automated Arrange–Act–Assert tests
+- [x] Delivery/pickup behavior covered
+- [x] CI syntax/test gate configured
+- [x] Obsolete controller stubs removed
+- [ ] Instructor-observed individual checkpoint — verify current instructor requirement
 
-### 8. Week 6 handoff
+## 9. Week 6 handoff
 
-Week 5 completes the logic/testing foundation. Week 6 can use the tested API while building the interface and recording required AI prompt logs.
+The Week 5 logic layer is now separated and tested so the interface can consume stable API responses during the next phase.
