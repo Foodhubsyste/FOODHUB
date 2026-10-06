@@ -76,12 +76,15 @@ function setup(){
   $('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};document.onkeydown=e=>{if(e.key==='Escape')closeModal()};
 }
 window.addEventListener('DOMContentLoaded',()=>{
-  setup();
-  setTimeout(()=>{
+  // Always dismiss the welcome screen after exactly 3 seconds.
+  // Keep this timer independent so a later UI setup error cannot leave the splash screen stuck.
+  const enterApp=()=>{
     $('#welcomeScreen').classList.add('hidden');
     const savedCustomer=localStorage.getItem('foodhub_customer');
     if(adminToken){show('adminApp');loadAdmin()}
-    else if(savedCustomer){try{currentCustomer=JSON.parse(savedCustomer);$('#customerGreeting').textContent='Hi, '+currentCustomer.full_name.split(' ')[0]+' 👋';show('customerApp');loadCustomer()}catch(_){show('roleScreen')}}
+    else if(savedCustomer){try{currentCustomer=JSON.parse(savedCustomer);$('#customerGreeting').textContent='Hi, '+currentCustomer.full_name.split(' ')[0]+' 👋';show('customerApp');loadCustomer()}catch(_){localStorage.removeItem('foodhub_customer');show('roleScreen')}}
     else show('roleScreen');
-  },3000);
+  };
+  setTimeout(enterApp,3000);
+  try{setup()}catch(error){console.error('FOODHUB setup error:',error)}
 });
