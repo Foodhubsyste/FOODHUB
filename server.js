@@ -1,414 +1,253 @@
-const express = require('express');
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+
 const app = express();
-const menuRoutes = require("./menuRoutes"); // 
-const orderRoutes = require("./orderRoutes");
-app.use("/menu", menuRoutes); // 
-app.use("/orders", orderRoutes);
+const PORT = process.env.PORT || 4444;
+const DATA_DIR = path.join(__dirname, "data");
+const DATA_FILE = path.join(DATA_DIR, "db.json");
 
-// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ✅ SIMPLE CORS — WORKS EVERYWHERE (Codespaces + local)
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
-// ==========================================
-// 🍽️ MENU ROUTES — with Guard Clause Validation
-// ==========================================
+app.use(express.static(path.join(__dirname, "public")));
 
-// GET /menu — View all menu items
-app.get('/menu', (req, res) => {
-  return res.status(200).json({
-    status: 200,
-    data: {
-      menuItems: [
-        { id: "M001", name: "Chicken Adobo", price: 120.00, description: "Braised chicken in soy sauce & vinegar" },
-        { id: "M002", name: "Pork Sinigang", price: 150.00, description: "Sour tamarind soup with pork & vegetables" },
-        { id: "M003", name: "Beef Caldereta", price: 180.00, description: "Spicy beef stew in tomato sauce" },
-        { id: "M004", name: "Fried Rice", price: 35.00, description: "Garlic fried rice" },
-        { id: "M005", name: "Grilled Fish", price: 130.00, description: "Fresh tilapia grilled to perfection" }
-      ]
-    },
-    error: null
+const initialDb = {
+  menuItems: [
+    { id: "M001", name: "Chicken Adobo", description: "Braised chicken in soy sauce and vinegar", category: "Main Dish", price: 120, stock_quantity: 20, status: "available" },
+    { id: "M002", name: "Pork Sinigang", description: "Sour tamarind soup with pork and vegetables", category: "Main Dish", price: 150, stock_quantity: 15, status: "available" },
+    { id: "M003", name: "Beef Caldereta", description: "Tender beef stew in tomato sauce", category: "Main Dish", price: 180, stock_quantity: 10, status: "available" },
+    { id: "M004", name: "Garlic Fried Rice", description: "Classic Filipino garlic fried rice", category: "Rice", price: 35, stock_quantity: 40, status: "available" },
+    { id: "M005", name: "Grilled Fish", description: "Fresh tilapia grilled to order", category: "Main Dish", price: 130, stock_quantity: 12, status: "available" }
+  ],
+  customers: [
+    { id: "C001", full_name: "Maria Santos", contact_number: "09171234567", address: "Poblacion, Maramag, Bukidnon", preferences: "", total_orders: 0 },
+    { id: "C002", full_name: "Juan Dela Cruz", contact_number: "09181112222", address: "North Poblacion, Maramag, Bukidnon", preferences: "", total_orders: 0 }
+  ],
+  orders: [],
+  sales: []
+};
+
+function ensureDb() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify(initialDb, null, 2));
+}
+function readDb() {
+  ensureDb();
+  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+}
+function writeDb(db) {
+  ensureDb();
+  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+}
+function ok(res, data, message = "Success", status = 200) {
+  return res.status(status).json({ status, data, error: null, message });
+}
+function fail(res, status, error, field = null) {
+  return res.status(status).json({ status, data: null, error, field, message: error });
+}
+function nextId(prefix, records) {
+  const max = records.reduce((n, r) => {
+    const value = Number(String(r.id || "").replace(/^\D+/, ""));
+    return Number.isFinite(value) ? Math.max(n, value) : n;
+  }, 0);
+  return prefix + String(max + 1).padStart(3, "0");
+}
+function validString(value, min, max) {
+  return typeof value === "string" && value.trim().length >= min && value.trim().length <= max;
+}
+function validateMenu(body, partial = false) {
+  if (!partial || body.name !== undefined) {
+    if (!validString(body.name, 2, 100)) return ["name", "Name must be 2–100 characters"];
+  }
+  if (!partial || body.price !== undefined) {
+    if (typeof body.price !== "number" || !Number.isFinite(body.price) || body.price <= 0) return ["price", "Price must be a positive number"];
+  }
+  if (body.description !== undefined && !validString(body.description, 0, 250)) return ["description", "Description must be 250 characters or fewer"];
+  if (body.category !== undefined && !validString(body.category, 2, 50)) return ["category", "Category must be 2–50 characters"];
+  if (body.stock_quantity !== undefined && (!Number.isInteger(body.stock_quantity) || body.stock_quantity < 0)) return ["stock_quantity", "Stock must be a non-negative whole number"];
+  if (body.status !== undefined && !["available", "unavailable"].includes(body.status)) return ["status", "Status must be available or unavailable"];
+  return null;
+}
+function validateCustomer(body, partial = false) {
+  if (!partial || body.full_name !== undefined) {
+    if (!validString(body.full_name, 2, 100)) return ["full_name", "Full name must be 2–100 characters"];
+  }
+  if (!partial || body.contact_number !== undefined) {
+    if (typeof body.contact_number !== "string" || !/^09\d{9}$/.test(body.contact_number)) return ["contact_number", "Contact number must be 11 digits in 09XXXXXXXXX format"];
+  }
+  if (!partial || body.address !== undefined) {
+    if (!validString(body.address, 5, 250)) return ["address", "Address must be 5–250 characters"];
+  }
+  if (body.preferences !== undefined && typeof body.preferences !== "string") return ["preferences", "Preferences must be text"];
+  return null;
+}
+function validateOrder(body, db) {
+  if (!validString(body.customer_id, 4, 20)) return ["customer_id", "A valid customer is required"];
+  if (!Array.isArray(body.items) || body.items.length === 0) return ["items", "At least one item is required"];
+  if (!["pending", "confirmed", "ready", "completed", "cancelled"].includes(body.order_status || "pending")) return ["order_status", "Invalid order status"];
+  for (const line of body.items) {
+    if (!validString(line.menu_id, 4, 20) || !Number.isInteger(line.quantity) || line.quantity < 1) return ["items", "Each order item needs a menu item and positive quantity"];
+    const menu = db.menuItems.find(m => m.id === line.menu_id);
+    if (!menu) return ["items", "One of the selected menu items does not exist"];
+  }
+  return null;
+}
+
+// Health
+app.get("/api/health", (req, res) => ok(res, { service: "FOODHUB", uptime: process.uptime() }));
+
+// Menu CRUD
+app.get("/api/menu", (req, res) => ok(res, readDb().menuItems, "Menu retrieved"));
+app.get("/api/menu/:id", (req, res) => {
+  const item = readDb().menuItems.find(x => x.id === req.params.id);
+  return item ? ok(res, item, "Menu item retrieved") : fail(res, 404, "Menu item not found");
+});
+app.post("/api/menu", (req, res) => {
+  const error = validateMenu(req.body);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const db = readDb();
+  const item = {
+    id: nextId("M", db.menuItems), name: req.body.name.trim(), description: (req.body.description || "").trim(),
+    category: (req.body.category || "Other").trim(), price: Number(req.body.price),
+    stock_quantity: Number(req.body.stock_quantity || 0), status: req.body.status || "available"
+  };
+  db.menuItems.push(item); writeDb(db);
+  return ok(res, item, "Menu item created", 201);
+});
+app.put("/api/menu/:id", (req, res) => {
+  const error = validateMenu(req.body, true);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const db = readDb(); const index = db.menuItems.findIndex(x => x.id === req.params.id);
+  if (index < 0) return fail(res, 404, "Menu item not found");
+  db.menuItems[index] = { ...db.menuItems[index], ...req.body };
+  writeDb(db); return ok(res, db.menuItems[index], "Menu item updated");
+});
+app.delete("/api/menu/:id", (req, res) => {
+  const db = readDb(); const index = db.menuItems.findIndex(x => x.id === req.params.id);
+  if (index < 0) return fail(res, 404, "Menu item not found");
+  const inOrder = db.orders.some(o => o.items.some(i => i.menu_id === req.params.id));
+  if (inOrder) return fail(res, 409, "Menu item cannot be deleted because it is used by an order");
+  const deleted = db.menuItems.splice(index, 1)[0]; writeDb(db);
+  return ok(res, deleted, "Menu item deleted");
+});
+
+// Customer CRUD
+app.get("/api/customers", (req, res) => ok(res, readDb().customers, "Customers retrieved"));
+app.get("/api/customers/:id", (req, res) => {
+  const c = readDb().customers.find(x => x.id === req.params.id);
+  return c ? ok(res, c, "Customer retrieved") : fail(res, 404, "Customer not found");
+});
+app.post("/api/customers", (req, res) => {
+  const error = validateCustomer(req.body);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const db = readDb();
+  if (db.customers.some(c => c.contact_number === req.body.contact_number)) return fail(res, 409, "A customer with this contact number already exists", "contact_number");
+  const customer = { id: nextId("C", db.customers), full_name: req.body.full_name.trim(), contact_number: req.body.contact_number, address: req.body.address.trim(), preferences: req.body.preferences || "", total_orders: 0 };
+  db.customers.push(customer); writeDb(db); return ok(res, customer, "Customer created", 201);
+});
+app.put("/api/customers/:id", (req, res) => {
+  const error = validateCustomer(req.body, true);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const db = readDb(); const index = db.customers.findIndex(x => x.id === req.params.id);
+  if (index < 0) return fail(res, 404, "Customer not found");
+  if (req.body.contact_number && db.customers.some((c, i) => i !== index && c.contact_number === req.body.contact_number)) return fail(res, 409, "Contact number already belongs to another customer", "contact_number");
+  db.customers[index] = { ...db.customers[index], ...req.body }; writeDb(db);
+  return ok(res, db.customers[index], "Customer updated");
+});
+app.delete("/api/customers/:id", (req, res) => {
+  const db = readDb(); const index = db.customers.findIndex(x => x.id === req.params.id);
+  if (index < 0) return fail(res, 404, "Customer not found");
+  if (db.orders.some(o => o.customer_id === req.params.id)) return fail(res, 409, "Customer cannot be deleted because they have order history");
+  const deleted = db.customers.splice(index, 1)[0]; writeDb(db); return ok(res, deleted, "Customer deleted");
+});
+
+// Orders CRUD
+app.get("/api/orders", (req, res) => {
+  const db = readDb();
+  const orders = db.orders.map(o => ({ ...o, customer: db.customers.find(c => c.id === o.customer_id) || null }));
+  return ok(res, orders, "Orders retrieved");
+});
+app.get("/api/orders/:id", (req, res) => {
+  const db = readDb(); const o = db.orders.find(x => x.id === req.params.id);
+  return o ? ok(res, { ...o, customer: db.customers.find(c => c.id === o.customer_id) || null }, "Order retrieved") : fail(res, 404, "Order not found");
+});
+app.post("/api/orders", (req, res) => {
+  const db = readDb(); const error = validateOrder(req.body, db);
+  if (error) return fail(res, 422, error[1], error[0]);
+  const customer = db.customers.find(c => c.id === req.body.customer_id);
+  if (!customer) return fail(res, 404, "Customer not found", "customer_id");
+  for (const line of req.body.items) {
+    const menu = db.menuItems.find(m => m.id === line.menu_id);
+    if (menu.stock_quantity < line.quantity) return fail(res, 409, `Not enough stock for ${menu.name}`, "items");
+  }
+  const items = req.body.items.map(line => {
+    const menu = db.menuItems.find(m => m.id === line.menu_id);
+    return { menu_id: menu.id, name: menu.name, quantity: line.quantity, unit_price: menu.price, subtotal: Number((menu.price * line.quantity).toFixed(2)) };
   });
-});
-
-// GET /menu/:id — View single menu item
-app.get('/menu/:id', (req, res) => {
-  const { id } = req.params;
-  return res.status(200).json({
-    status: 200,
-    data: { message: "showMenu stub", id: id },
-    error: null
+  const total = Number(items.reduce((sum, i) => sum + i.subtotal, 0).toFixed(2));
+  const order = {
+    id: nextId("O", db.orders), order_number: `ORD-${Date.now()}`, customer_id: customer.id, items,
+    total_amount: total, pickup_datetime: req.body.pickup_datetime || "", payment_status: req.body.payment_status || "unpaid",
+    order_status: req.body.order_status || "pending", notes: req.body.notes || "", created_at: new Date().toISOString()
+  };
+  items.forEach(line => {
+    const menu = db.menuItems.find(m => m.id === line.menu_id);
+    menu.stock_quantity -= line.quantity;
+    if (menu.stock_quantity === 0) menu.status = "unavailable";
   });
+  customer.total_orders += 1; db.orders.push(order); writeDb(db);
+  return ok(res, order, "Order created", 201);
+});
+app.put("/api/orders/:id", (req, res) => {
+  const db = readDb(); const index = db.orders.findIndex(x => x.id === req.params.id);
+  if (index < 0) return fail(res, 404, "Order not found");
+  const allowedStatuses = ["pending", "confirmed", "ready", "completed", "cancelled"];
+  if (req.body.order_status && !allowedStatuses.includes(req.body.order_status)) return fail(res, 422, "Invalid order status", "order_status");
+  const allowedPayments = ["unpaid", "partial", "paid"];
+  if (req.body.payment_status && !allowedPayments.includes(req.body.payment_status)) return fail(res, 422, "Invalid payment status", "payment_status");
+  db.orders[index] = { ...db.orders[index], pickup_datetime: req.body.pickup_datetime ?? db.orders[index].pickup_datetime, payment_status: req.body.payment_status ?? db.orders[index].payment_status, order_status: req.body.order_status ?? db.orders[index].order_status, notes: req.body.notes ?? db.orders[index].notes };
+  if (db.orders[index].order_status === "completed" && !db.sales.some(s => s.order_id === db.orders[index].id)) {
+    db.sales.push({ id: nextId("S", db.sales), order_id: db.orders[index].id, transaction_date: new Date().toISOString().slice(0, 10), total_received: db.orders[index].total_amount, payment_method: req.body.payment_method || "cash" });
+  }
+  writeDb(db); return ok(res, db.orders[index], "Order updated");
+});
+app.delete("/api/orders/:id", (req, res) => {
+  const db = readDb(); const index = db.orders.findIndex(x => x.id === req.params.id);
+  if (index < 0) return fail(res, 404, "Order not found");
+  if (db.orders[index].order_status !== "cancelled") return fail(res, 409, "Only cancelled orders can be deleted");
+  db.orders.splice(index, 1); writeDb(db); return ok(res, null, "Order deleted");
 });
 
-// POST /menu — Create menu item with validation
-app.post('/menu', (req, res) => {
-  const { name, price, description } = req.body;
-
-  // --- GUARD CLAUSES — Check BAD cases FIRST ---
-  if (!name) {
-    return res.status(422).json({ status: 422, error: "name is required", field: "name" });
-  }
-  if (typeof name !== "string") {
-    return res.status(422).json({ status: 422, error: "name must be text", field: "name" });
-  }
-  if (name.length < 1 || name.length > 100) {
-    return res.status(422).json({ status: 422, error: "name must be 1–100 characters", field: "name" });
-  }
-  if (price === undefined || price === null) {
-    return res.status(422).json({ status: 422, error: "price is required", field: "price" });
-  }
-  if (typeof price !== "number") {
-    return res.status(422).json({ status: 422, error: "price must be a number", field: "price" });
-  }
-  if (price < 0) {
-    return res.status(422).json({ status: 422, error: "price cannot be negative", field: "price" });
-  }
-  if (description !== undefined && typeof description === "string" && description.length > 250) {
-    return res.status(422).json({ status: 422, error: "description max 250 characters", field: "description" });
-  }
-  // --- ALL VALIDATION PASSED ---
-
-  return res.status(201).json({
-    status: 201,
-    data: { message: "createMenu stub", received: { name, price, description } },
-    error: null
-  });
+// Sales
+app.get("/api/sales", (req, res) => ok(res, readDb().sales, "Sales retrieved"));
+app.get("/api/dashboard", (req, res) => {
+  const db = readDb();
+  const revenue = db.sales.reduce((s, x) => s + Number(x.total_received || 0), 0);
+  return ok(res, {
+    menu_count: db.menuItems.length, customer_count: db.customers.length, order_count: db.orders.length,
+    pending_orders: db.orders.filter(o => ["pending", "confirmed", "ready"].includes(o.order_status)).length,
+    completed_orders: db.orders.filter(o => o.order_status === "completed").length,
+    revenue: Number(revenue.toFixed(2)),
+    low_stock: db.menuItems.filter(m => m.stock_quantity <= 5).length
+  }, "Dashboard retrieved");
 });
 
-// PUT /menu/:id — Update menu item with validation
-app.put('/menu/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, price, description } = req.body;
-
-  // --- GUARD CLAUSES ---
-  if (name !== undefined) {
-    if (typeof name !== "string") {
-      return res.status(422).json({ status: 422, error: "name must be text", field: "name" });
-    }
-    if (name.length < 1 || name.length > 100) {
-      return res.status(422).json({ status: 422, error: "name must be 1–100 characters", field: "name" });
-    }
-  }
-  if (price !== undefined) {
-    if (typeof price !== "number") {
-      return res.status(422).json({ status: 422, error: "price must be a number", field: "price" });
-    }
-    if (price < 0) {
-      return res.status(422).json({ status: 422, error: "price cannot be negative", field: "price" });
-    }
-  }
-  if (description !== undefined && typeof description === "string" && description.length > 250) {
-    return res.status(422).json({ status: 422, error: "description max 250 characters", field: "description" });
-  }
-  // --- ALL VALIDATION PASSED ---
-
-  return res.status(200).json({
-    status: 200,
-    data: { message: "updateMenu stub", id: id, received: { name, price, description } },
-    error: null
-  });
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api/")) return fail(res, 404, "API endpoint not found");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// DELETE /menu/:id — Delete menu item (with Authorization Guard)
-app.delete('/menu/:id', (req, res) => {
-  const { id } = req.params;
-  // --- AUTHORIZATION GUARD ---
-  const currentUserId = req.headers['x-user-id'];
-  const menuOwnerId = "user-owner-123"; // Simulated owner
-
-  if (!currentUserId || currentUserId !== menuOwnerId) {
-    return res.status(403).json({
-      status: 403,
-      error: "You are not allowed to delete this menu item",
-      action: "delete"
-    });
-  }
-  // --- AUTHORIZATION PASSED ---
-
-  return res.status(200).json({
-    status: 200,
-    data: { message: "deleteMenu stub", deletedId: id },
-    error: null
-  });
-});
-
-// ==========================================
-// 📝 ORDER ROUTES — with Guard Clause Validation
-// ==========================================
-
-// GET /orders — View all orders
-app.get('/orders', (req, res) => {
-  return res.status(200).json({
-    status: 200,
-    data: {
-      orders: [
-        { id: "O001", item: "Chicken Adobo", qty: 3, status: "pending" },
-        { id: "O002", item: "Pork Sinigang", qty: 2, status: "paid" },
-        { id: "O003", item: "Beef Caldereta", qty: 5, status: "shipped" },
-        { id: "O004", item: "Fried Rice", qty: 10, status: "pending" },
-        { id: "O005", item: "Grilled Fish", qty: 1, status: "paid" }
-      ]
-    },
-    error: null
-  });
-});
-
-// GET /orders/:id — View single order
-app.get('/orders/:id', (req, res) => {
-  const { id } = req.params;
-  return res.status(200).json({
-    status: 200,
-    data: { message: "showOrder stub", id: id },
-    error: null
-  });
-});
-
-// POST /orders — Create order with validation
-app.post('/orders', (req, res) => {
-  const { item, qty, status } = req.body;
-  const ALLOWED_STATUSES = ["pending", "paid", "shipped"];
-
-  // --- GUARD CLAUSES — Check BAD cases FIRST ---
-  if (!item) {
-    return res.status(422).json({ status: 422, error: "item is required", field: "item" });
-  }
-  if (typeof item !== "string") {
-    return res.status(422).json({ status: 422, error: "item must be text", field: "item" });
-  }
-  if (item.length < 1 || item.length > 100) {
-    return res.status(422).json({ status: 422, error: "item must be 1–100 characters", field: "item" });
-  }
-  if (qty === undefined || qty === null) {
-    return res.status(422).json({ status: 422, error: "qty is required", field: "qty" });
-  }
-  if (typeof qty !== "number") {
-    return res.status(422).json({ status: 422, error: "qty must be a number", field: "qty" });
-  }
-  if (qty < 1 || qty > 999) {
-    return res.status(422).json({ status: 422, error: "qty must be 1–999", field: "qty" });
-  }
-  if (!status) {
-    return res.status(422).json({ status: 422, error: "status is required", field: "status" });
-  }
-  if (!ALLOWED_STATUSES.includes(status)) {
-    return res.status(422).json({ status: 422, error: "invalid status — allowed: pending, paid, shipped", field: "status" });
-  }
-  // --- ALL VALIDATION PASSED ---
-
-  return res.status(201).json({
-    status: 201,
-    data: { message: "createOrder stub", received: { item, qty, status } },
-    error: null
-  });
-});
-
-// PUT /orders/:id — Update order with validation
-app.put('/orders/:id', (req, res) => {
-  const { id } = req.params;
-  const { item, qty, status } = req.body;
-  const ALLOWED_STATUSES = ["pending", "paid", "shipped"];
-
-  // --- GUARD CLAUSES ---
-  if (item !== undefined) {
-    if (typeof item !== "string") {
-      return res.status(422).json({ status: 422, error: "item must be text", field: "item" });
-    }
-    if (item.length < 1 || item.length > 100) {
-      return res.status(422).json({ status: 422, error: "item must be 1–100 characters", field: "item" });
-    }
-  }
-  if (qty !== undefined) {
-    if (typeof qty !== "number") {
-      return res.status(422).json({ status: 422, error: "qty must be a number", field: "qty" });
-    }
-    if (qty < 1 || qty > 999) {
-      return res.status(422).json({ status: 422, error: "qty must be 1–999", field: "qty" });
-    }
-  }
-  if (status !== undefined && !ALLOWED_STATUSES.includes(status)) {
-    return res.status(422).json({ status: 422, error: "invalid status — allowed: pending, paid, shipped", field: "status" });
-  }
-  // --- ALL VALIDATION PASSED ---
-
-  return res.status(200).json({
-    status: 200,
-    data: { message: "updateOrder stub", id: id, received: { item, qty, status } },
-    error: null
-  });
-});
-
-// DELETE /orders/:id — Delete order (with Authorization Guard)
-app.delete('/orders/:id', (req, res) => {
-  const { id } = req.params;
-  // --- AUTHORIZATION GUARD ---
-  // Placement: Check PERMISSION BEFORE allowing delete
-  const currentUserId = req.headers['x-user-id']; // Simulated: current logged-in user
-  const orderOwnerId = "user-owner-123"; // Simulated: who owns this order (from database later)
-  
-  if (!currentUserId || currentUserId !== orderOwnerId) {
-    // 403 = FORBIDDEN — different from validation's 422!
-    return res.status(403).json({
-      status: 403,
-      error: "You are not allowed to delete this order",
-      action: "delete"
-    });
-  }
-  // --- AUTHORIZATION PASSED — proceed safely ---
-
-  return res.status(200).json({
-    status: 200,
-    data: { message: "deleteOrder stub", deletedId: id },
-    error: null
-  });
-});
-
-// ==========================================
-// 👤 CUSTOMER ROUTES — with Guard Clause Validation
-// ==========================================
-
-// GET /customers — View all customers
-app.get('/customers', (req, res) => {
-  return res.status(200).json({
-    status: 200,
-    data: {
-      customers: [
-        { id: "C001", name: "Maria Santos", phone: "09171234567", address: "Maramag, Bukidnon" },
-        { id: "C002", name: "Juan Dela Cruz", phone: "09171112222", address: "Poblacion, Maramag" }
-      ]
-    },
-    error: null
-  });
-});
-
-// GET /customers/:id — View single customer
-app.get('/customers/:id', (req, res) => {
-  const { id } = req.params;
-  return res.status(200).json({
-    status: 200,
-    data: { message: "showCustomer stub", id: id },
-    error: null
-  });
-});
-
-// POST /customers — Create customer with validation
-app.post('/customers', (req, res) => {
-  const { name, phone, address } = req.body;
-  const PHONE_PATTERN = /^09\d{9}$/; // starts with 09, 11 digits total
-
-  // --- GUARD CLAUSES ---
-  if (!name) {
-    return res.status(422).json({ status: 422, error: "name is required", field: "name" });
-  }
-  if (typeof name !== "string") {
-    return res.status(422).json({ status: 422, error: "name must be text", field: "name" });
-  }
-  if (name.length < 1 || name.length > 100) {
-    return res.status(422).json({ status: 422, error: "name must be 1–100 characters", field: "name" });
-  }
-  if (!phone) {
-    return res.status(422).json({ status: 422, error: "phone is required", field: "phone" });
-  }
-  if (!PHONE_PATTERN.test(phone)) {
-    return res.status(422).json({ status: 422, error: "phone must be 11 digits Philippine format (09XXXXXXXX)", field: "phone" });
-  }
-  if (!address) {
-    return res.status(422).json({ status: 422, error: "address is required", field: "address" });
-  }
-  if (typeof address !== "string") {
-    return res.status(422).json({ status: 422, error: "address must be text", field: "address" });
-  }
-  if (address.length < 5 || address.length > 250) {
-    return res.status(422).json({ status: 422, error: "address must be 5–250 characters", field: "address" });
-  }
-  // --- ALL VALIDATION PASSED ---
-
-  return res.status(201).json({
-    status: 201,
-    data: { message: "createCustomer stub", received: { name, phone, address } },
-    error: null
-  });
-});
-
-// PUT /customers/:id — Update customer with validation
-app.put('/customers/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, phone, address } = req.body;
-  const PHONE_PATTERN = /^09\d{9}$/;
-
-  // --- GUARD CLAUSES ---
-  if (name !== undefined) {
-    if (typeof name !== "string") {
-      return res.status(422).json({ status: 422, error: "name must be text", field: "name" });
-    }
-    if (name.length < 1 || name.length > 100) {
-      return res.status(422).json({ status: 422, error: "name must be 1–100 characters", field: "name" });
-    }
-  }
-  if (phone !== undefined && !PHONE_PATTERN.test(phone)) {
-    return res.status(422).json({ status: 422, error: "phone must be 11 digits Philippine format (09XXXXXXXX)", field: "phone" });
-  }
-  if (address !== undefined) {
-    if (typeof address !== "string") {
-      return res.status(422).json({ status: 422, error: "address must be text", field: "address" });
-    }
-    if (address.length < 5 || address.length > 250) {
-      return res.status(422).json({ status: 422, error: "address must be 5–250 characters", field: "address" });
-    }
-  }
-  // --- ALL VALIDATION PASSED ---
-
-  return res.status(200).json({
-    status: 200,
-    data: { message: "updateCustomer stub", id: id, received: { name, phone, address } },
-    error: null
-  });
-});
-
-// DELETE /customers/:id — Delete customer
-app.delete('/customers/:id', (req, res) => {
-  const { id } = req.params;
-  return res.status(200).json({
-    status: 200,
-    data: { message: "deleteCustomer stub", deletedId: id },
-    error: null
-  });
-});
-
-// ==========================================
-// 💰 SALES ROUTES
-// ==========================================
-
-// GET /sales — View all sales records
-app.get('/sales', (req, res) => {
-  return res.status(200).json({
-    status: 200,
-    data: {
-      sales: [
-        { id: "S001", orderId: "O001", item: "Chicken Adobo", qty: 3, total: 360, date: "2026-09-01" },
-        { id: "S002", orderId: "O002", item: "Pork Sinigang", qty: 2, total: 300, date: "2026-09-02" },
-        { id: "S003", orderId: "O003", item: "Beef Caldereta", qty: 5, total: 900, date: "2026-09-03" }
-      ]
-    },
-    error: null
-  });
-});
-
-
-// ==========================================
-// ✅ SERVER START — BOTTOM OF FILE
-// ==========================================
-const PORT = 4444;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`✅ Test in browser: https://your-url-4444.app.github.dev/orders`);
-});
-
+if (require.main === module) {
+  ensureDb();
+  app.listen(PORT, "0.0.0.0", () => console.log(`FOODHUB running on port ${PORT}`));
+}
 module.exports = app;
