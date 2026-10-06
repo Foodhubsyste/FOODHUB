@@ -10,7 +10,33 @@ async function api(url,opt={}){
   const headers={'Content-Type':'application/json',...(opt.headers||{})};
   if(adminToken)headers.Authorization='Bearer '+adminToken;
   const r=await fetch(url,{...opt,headers});let j={};try{j=await r.json()}catch(_){}
-  if(!r.ok)throw Error(j.error||j.message||'Request failed');return j.data;
+  if(!r.ok){
+    const err=new Error(j.error||j.message||'Request failed');
+    err.status=r.status;
+    err.field=j.field||null;
+    err.data=j.data||null;
+    throw err;
+  }
+  return j.data;
+}
+function setFormBusy(form,busy,label='Saving...'){
+  if(!form)return;
+  const button=form.querySelector('button[type="submit"]');
+  if(!button)return;
+  if(busy){
+    button.dataset.originalText=button.textContent;
+    button.disabled=true;
+    button.setAttribute('aria-busy','true');
+    button.textContent=label;
+  }else{
+    button.disabled=false;
+    button.removeAttribute('aria-busy');
+    button.textContent=button.dataset.originalText||'Save';
+  }
+}
+function formError(form,message,field=null){
+  const box=form?.querySelector('.form-error');
+  if(box)box.textContent=field?field+': '+message:message;
 }
 function toast(msg,type='success'){const x=document.createElement('div');x.className='toast-msg '+type;x.textContent=msg;$('#toast').appendChild(x);setTimeout(()=>x.remove(),3200)}
 function show(id){['welcomeScreen','roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el)el.classList.toggle('hidden',x!==id)})}
@@ -42,11 +68,44 @@ function renderOrders(){const q=($('#orderSearch')?.value||'').toLowerCase(),f=$
 function renderSales(){const total=sales.reduce((s,x)=>s+Number(x.total_received||0),0);$('#salesSummary').innerHTML='<div class="sale-box"><small>TRANSACTIONS</small><strong>'+sales.length+'</strong></div><div class="sale-box"><small>TOTAL REVENUE</small><strong>'+money(total)+'</strong></div><div class="sale-box"><small>AVERAGE SALE</small><strong>'+money(sales.length?total/sales.length:0)+'</strong></div>';$('#salesList').innerHTML=table(['Sale ID','Order','Date','Amount','Method'],sales.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.order_id)+'</td><td>'+esc(x.transaction_date)+'</td><td><b>'+money(x.total_received)+'</b></td><td>'+esc(x.payment_method)+'</td></tr>'),'No completed sales yet.')}
 
 function openModal(html){$('#modal').innerHTML='<div class="modal-box">'+html+'</div>';$('#modal').classList.remove('hidden')}function closeModal(){$('#modal').classList.add('hidden');$('#modal').innerHTML=''}
-function menuForm(id){const x=id?menu.find(a=>a.id===id):{};openModal('<div class="modal-head"><h2>'+(id?'Edit':'Add')+' Menu Item</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="menuForm" class="form-grid"><label class="form-field full-field">FOOD NAME<input name="name" required value="'+esc(x.name||'')+'"></label><label class="form-field">CATEGORY<select name="category">'+['Main Dish','Rice','Side Dish','Dessert','Beverage'].map(v=>'<option '+(x.category===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field">PRICE<input name="price" type="number" min=".01" step=".01" required value="'+(x.price||'')+'"></label><label class="form-field">STOCK<input name="stock_quantity" type="number" min="0" required value="'+(x.stock_quantity??0)+'"></label><label class="form-field">STATUS<select name="status"><option value="available">Available</option><option value="unavailable" '+(x.status==='unavailable'?'selected':'')+'>Unavailable</option></select></label><label class="form-field full-field">DESCRIPTION<textarea name="description">'+esc(x.description||'')+'</textarea></label><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Save Item</button></div></form></div>');$('#menuForm').onsubmit=async e=>{e.preventDefault();try{const f=new FormData(e.target);await api(id?'/api/menu/'+id:'/api/menu',{method:id?'PUT':'POST',body:JSON.stringify({name:f.get('name'),description:f.get('description'),category:f.get('category'),price:Number(f.get('price')),stock_quantity:Number(f.get('stock_quantity')),status:f.get('status')})});closeModal();await loadAdmin();toast(id?'Menu updated.':'Menu added.')}catch(err){toast(err.message,'error')}}}
+function menuForm(id){const x=id?menu.find(a=>a.id===id):{};openModal('<div class="modal-head"><h2>'+(id?'Edit':'Add')+' Menu Item</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="menuForm" class="form-grid"><label class="form-field full-field">FOOD NAME<input name="name" required value="'+esc(x.name||'')+'"></label><label class="form-field">CATEGORY<select name="category">'+['Main Dish','Rice','Side Dish','Dessert','Beverage'].map(v=>'<option '+(x.category===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field">PRICE<input name="price" type="number" min=".01" step=".01" required value="'+(x.price||'')+'"></label><label class="form-field">STOCK<input name="stock_quantity" type="number" min="0" required value="'+(x.stock_quantity??0)+'"></label><label class="form-field">STATUS<select name="status"><option value="available">Available</option><option value="unavailable" '+(x.status==='unavailable'?'selected':'')+'>Unavailable</option></select></label><label class="form-field full-field">DESCRIPTION<textarea name="description">'+esc(x.description||'')+'</textarea></label><div class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Save Item</button></div></form></div>');$('#menuForm').onsubmit=async e=>{
+  e.preventDefault();
+  const form=e.target; formError(form,'');
+  const data=new FormData(form);
+  const body={name:data.get('name'),description:data.get('description'),category:data.get('category'),price:Number(data.get('price')),stock_quantity:Number(data.get('stock_quantity')),status:data.get('status')};
+  setFormBusy(form,true,id?'Updating...':'Creating...');
+  try{
+    await api(id?'/api/menu/'+id:'/api/menu',{method:id?'PUT':'POST',body:JSON.stringify(body)});
+    closeModal(); await loadAdmin(); toast(id?'Menu updated.':'Menu added.');
+  }catch(err){
+    formError(form,err.message,err.status===422?err.field:null); toast(err.message,'error');
+  }finally{setFormBusy(form,false);}
+}}
 async function deleteMenu(id){if(!confirm('Delete this menu item?'))return;try{await api('/api/menu/'+id,{method:'DELETE'});await loadAdmin();toast('Menu item deleted.')}catch(e){toast(e.message,'error')}}
-function customerForm(id){const x=id?customers.find(a=>a.id===id):{};openModal('<div class="modal-head"><h2>'+(id?'Edit':'Add')+' Customer</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="customerForm" class="form-grid"><label class="form-field full-field">FULL NAME<input name="full_name" required value="'+esc(x.full_name||'')+'"></label><label class="form-field full-field">PHONE NUMBER<input name="contact_number" required value="'+esc(x.contact_number||'')+'"></label><label class="form-field full-field">ADDRESS<textarea name="address" required>'+esc(x.address||'')+'</textarea></label><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Save Customer</button></div></form></div>');$('#customerForm').onsubmit=async e=>{e.preventDefault();try{const body=Object.fromEntries(new FormData(e.target));await api(id?'/api/customers/'+id:'/api/customers',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModal();await loadAdmin();toast(id?'Customer updated.':'Customer added.')}catch(err){toast(err.message,'error')}}}
+function customerForm(id){const x=id?customers.find(a=>a.id===id):{};openModal('<div class="modal-head"><h2>'+(id?'Edit':'Add')+' Customer</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="customerForm" class="form-grid"><label class="form-field full-field">FULL NAME<input name="full_name" required value="'+esc(x.full_name||'')+'"></label><label class="form-field full-field">PHONE NUMBER<input name="contact_number" required value="'+esc(x.contact_number||'')+'"></label><label class="form-field full-field">ADDRESS<textarea name="address" required>'+esc(x.address||'')+'</textarea></label><div class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Save Customer</button></div></form></div>');$('#customerForm').onsubmit=async e=>{
+  e.preventDefault();
+  const form=e.target; formError(form,'');
+  const body=Object.fromEntries(new FormData(form));
+  setFormBusy(form,true,id?'Updating...':'Creating...');
+  try{
+    await api(id?'/api/customers/'+id:'/api/customers',{method:id?'PUT':'POST',body:JSON.stringify(body)});
+    closeModal(); await loadAdmin(); toast(id?'Customer updated.':'Customer added.');
+  }catch(err){
+    formError(form,err.message,err.status===422?err.field:null); toast(err.message,'error');
+  }finally{setFormBusy(form,false);}
+}}
 async function deleteCustomer(id){if(!confirm('Delete this customer?'))return;try{await api('/api/customers/'+id,{method:'DELETE'});await loadAdmin();toast('Customer deleted.')}catch(e){toast(e.message,'error')}}
-function orderEdit(id){const x=orders.find(a=>a.id===id);openModal('<div class="modal-head"><h2>Update Order</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><p><b>'+esc(x.order_number)+'</b> · '+money(x.total_amount)+'</p><form id="orderEditForm" class="form-grid"><label class="form-field">ORDER STATUS<select name="order_status">'+['pending','confirmed','ready','completed','cancelled'].map(v=>'<option '+(v===x.order_status?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field">PAYMENT STATUS<select name="payment_status">'+['unpaid','partial','paid'].map(v=>'<option '+(v===x.payment_status?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field full-field">PAYMENT METHOD<select name="payment_method">'+['cash','gcash','bank transfer'].map(v=>'<option '+(v===x.payment_method?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Update</button></div></form></div>');$('#orderEditForm').onsubmit=async e=>{e.preventDefault();try{await api('/api/orders/'+id,{method:'PUT',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});closeModal();await loadAdmin();toast('Order updated.')}catch(err){toast(err.message,'error')}}}
+function orderEdit(id){const x=orders.find(a=>a.id===id);openModal('<div class="modal-head"><h2>Update Order</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><p><b>'+esc(x.order_number)+'</b> · '+money(x.total_amount)+'</p><form id="orderEditForm" class="form-grid"><label class="form-field">ORDER STATUS<select name="order_status">'+['pending','confirmed','ready','completed','cancelled'].map(v=>'<option '+(v===x.order_status?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field">PAYMENT STATUS<select name="payment_status">'+['unpaid','partial','paid'].map(v=>'<option '+(v===x.payment_status?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field full-field">PAYMENT METHOD<select name="payment_method">'+['cash','gcash','bank transfer'].map(v=>'<option '+(v===x.payment_method?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button type="submit" class="primary-btn">Update</button></div></form></div>');$('#orderEditForm').onsubmit=async e=>{
+  e.preventDefault();
+  const form=e.target; formError(form,'');
+  setFormBusy(form,true,'Updating...');
+  try{
+    await api('/api/orders/'+id,{method:'PUT',body:JSON.stringify(Object.fromEntries(new FormData(form)))});
+    closeModal(); await loadAdmin(); toast('Order updated.');
+  }catch(err){
+    formError(form,err.message,err.status===422?err.field:null); toast(err.message,'error');
+  }finally{setFormBusy(form,false);}
+}}
 
 function renderCustomerMenu(){const q=($('#customerMenuSearch')?.value||'').toLowerCase();const items=menu.filter(x=>x.status==='available'&&x.stock_quantity>0&&[x.name,x.category].join(' ').toLowerCase().includes(q));$('#customerMenu').innerHTML=items.length?items.map(x=>'<article class="food-card"><div class="food-image">🍲</div><div class="food-body"><span class="eyebrow">'+esc(x.category)+'</span><h3>'+esc(x.name)+'</h3><p>'+esc(x.description||'Home-cooked favorite')+'</p><div class="food-meta"><span class="food-price">'+money(x.price)+'</span><button class="add-food" onclick="addCart(\''+x.id+'\')">＋ Add</button></div></div></article>').join(''):'<div class="empty">No available food found.</div>'}
 function addCart(id){const item=menu.find(x=>x.id===id);const existing=cart.find(x=>x.id===id);if(existing){if(existing.quantity<item.stock_quantity)existing.quantity++;else return toast('Maximum available stock reached.','error')}else cart.push({id,quantity:1});renderCart();toast(item.name+' added to your order.')}
@@ -91,12 +150,23 @@ function checkoutForm(){
   const now=new Date();
   const minDate=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
   const defaultDate=new Date(now.getTime()+60*60*1000-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const modalHtml='<div class="modal-head"><div><h2>Order Details</h2><small class="modal-subtitle">Choose how and when you want to receive your food.</small></div><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="checkoutForm" class="form-grid"><div class="form-field full-field"><span class="field-title">FULFILLMENT METHOD</span><div class="fulfillment-grid"><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="pickup" checked><span>🏪 <b>Pick Up</b><small>Collect your order at FOODHUB</small></span></label><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="delivery"><span>🚚 <b>Delivery</b><small>We will deliver to your location</small></span></label></div></div><label id="deliveryLocationField" class="form-field full-field hidden">DELIVERY LOCATION<textarea id="deliveryLocation" name="delivery_location" maxlength="250" placeholder="Complete delivery address, landmark, barangay..."></textarea></label><label class="form-field">DATE<input id="orderDate" name="order_date" type="date" min="'+minDate+'" value="'+defaultDate+'" required></label><label class="form-field">TIME<input id="orderTime" name="order_time" type="time" required></label><div class="schedule-note full-field">Please choose the date and time you want your order ready for pickup or delivered.</div><div id="checkoutError" class="form-error full-field"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Back</button><button class="primary-btn">Place Order</button></div></form></div>';
+  const modalHtml='<div class="modal-head"><div><h2>Order Details</h2><small class="modal-subtitle">Choose how and when you want to receive your food.</small></div><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="checkoutForm" class="form-grid"><div class="form-field full-field"><span class="field-title">FULFILLMENT METHOD</span><div class="fulfillment-grid"><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="pickup" checked><span>🏪 <b>Pick Up</b><small>Collect your order at FOODHUB</small></span></label><label class="fulfillment-option"><input type="radio" name="fulfillment_type" value="delivery"><span>🚚 <b>Delivery</b><small>We will deliver to your location</small></span></label></div></div><label id="deliveryLocationField" class="form-field full-field hidden">DELIVERY LOCATION<textarea id="deliveryLocation" name="delivery_location" maxlength="250" placeholder="Complete delivery address, landmark, barangay..."></textarea></label><label class="form-field">DATE<input id="orderDate" name="order_date" type="date" min="'+minDate+'" value="'+defaultDate+'" required></label><label class="form-field">TIME<input id="orderTime" name="order_time" type="time" required></label><div class="schedule-note full-field">Please choose the date and time you want your order ready for pickup or delivered.</div><div id="checkoutError" class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Back</button><button type="submit" class="primary-btn">Place Order</button></div></form></div>';
   openModal(modalHtml);
   const toggle=()=>{const delivery=$('input[name="fulfillment_type"]:checked').value==='delivery';$('#deliveryLocationField').classList.toggle('hidden',!delivery);$('#deliveryLocation').required=delivery};
   $$('input[name="fulfillment_type"]').forEach(r=>r.onchange=toggle);
   toggle();
-  $('#checkoutForm').onsubmit=async e=>{e.preventDefault();$('#checkoutError').textContent='';const f=new FormData(e.target),date=f.get('order_date'),time=f.get('order_time');const scheduled=date+'T'+time,delivery=f.get('fulfillment_type')==='delivery';if(!date||!time)return $('#checkoutError').textContent='Please choose both a date and time.';if(delivery&&!String(f.get('delivery_location')||'').trim())return $('#checkoutError').textContent='Please enter the delivery location.';if(new Date(scheduled).getTime()<Date.now())return $('#checkoutError').textContent='Please choose a future date and time.';try{await api('/api/orders',{method:'POST',body:JSON.stringify({customer_id:currentCustomer.id,items:cart.map(c=>({menu_id:c.id,quantity:c.quantity})),fulfillment_type:f.get('fulfillment_type'),delivery_location:String(f.get('delivery_location')||'').trim(),scheduled_datetime:scheduled})});cart=[];closeModal();await loadCustomer();toast(delivery?'Delivery order placed!':'Pickup order placed!')}catch(err){$('#checkoutError').textContent=err.message}};
+  $('#checkoutForm').onsubmit=async e=>{e.preventDefault();$('#checkoutError').textContent='';const f=new FormData(e.target),date=f.get('order_date'),time=f.get('order_time');const scheduled=date+'T'+time,delivery=f.get('fulfillment_type')==='delivery';if(!date||!time)return $('#checkoutError').textContent='Please choose both a date and time.';if(delivery&&!String(f.get('delivery_location')||'').trim())return $('#checkoutError').textContent='Please enter the delivery location.';if(new Date(scheduled).getTime()<Date.now())return $('#checkoutError').textContent='Please choose a future date and time.';const form=e.target;
+  const submit=form.querySelector('button[type="submit"]');
+  submit.disabled=true; submit.setAttribute('aria-busy','true'); submit.textContent='Placing order...';
+  try{
+    await api('/api/orders',{method:'POST',body:JSON.stringify({customer_id:currentCustomer.id,items:cart.map(c=>({menu_id:c.id,quantity:c.quantity})),fulfillment_type:f.get('fulfillment_type'),delivery_location:String(f.get('delivery_location')||'').trim(),scheduled_datetime:scheduled})});
+    cart=[]; closeModal(); await loadCustomer(); toast(delivery?'Delivery order placed!':'Pickup order placed!');
+  }catch(err){
+    $('#checkoutError').textContent=(err.status===422&&err.field?err.field+': ':'')+err.message;
+  }finally{
+    submit.disabled=false; submit.removeAttribute('aria-busy'); submit.textContent='Place Order';
+  }
+};
 }
 async function placeCustomerOrder(){if(!cart.length)return toast('Add at least one food item first.','error');checkoutForm()}
 function logoutAdmin(){adminToken='';localStorage.removeItem('foodhub_admin_token');show('roleScreen')}
