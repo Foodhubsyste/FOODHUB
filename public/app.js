@@ -109,3 +109,5 @@ window.addEventListener('DOMContentLoaded',()=>{
   setTimeout(enterApp,3000);
   try{setup()}catch(error){console.error('FOODHUB setup error:',error)}
 });
+
+// CI selector regression fix
