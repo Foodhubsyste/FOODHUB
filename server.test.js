@@ -224,4 +224,7 @@ test("frontend files and JavaScript bindings are wired correctly", () => {
   expect(app).toContain("$$('[data-back=\"role\"]').forEach");
   expect(app).toContain("$$('input[name=\"fulfillment_type\"]').forEach");
   expect(app).not.toContain("async function formatSchedule");
+  expect(app).toContain("Fulfillment");
+  expect(app).toContain("🚚 Delivery");
+  expect(app).toContain("🏪 Pickup");
 });
