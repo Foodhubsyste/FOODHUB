@@ -203,7 +203,7 @@ test("completing an order creates a sale and cancelling removes the sale", async
   expect(salesAfter.body.data.some(s => s.order_id === order.body.data.id)).toBe(false);
 });
 
-test("frontend files exist and JavaScript has no broken multi-selector bindings", () => {
+test("frontend files and JavaScript bindings are wired correctly", () => {
   const indexPath = path.join(__dirname, "public", "index.html");
   const appPath = path.join(__dirname, "public", "app.js");
   expect(fs.existsSync(indexPath)).toBe(true);
@@ -216,10 +216,12 @@ test("frontend files exist and JavaScript has no broken multi-selector bindings"
   expect(html).not.toContain('style="display:none;"');
   expect(html).not.toContain('style="display:grid;"');
   expect(html).not.toContain("/navigation.js");
-  expect(app).toContain("$('.page').forEach");
-  expect(app).toContain("$('.nav').forEach");
-  expect(app).toContain("$('[data-tab-link]').forEach");
-  expect(app).toContain("$('[data-back=\"role\"]').forEach");
+
+  // Every multi-element query must use $$, not $ (querySelector).
+  expect(app).toContain("$$('.page').forEach");
+  expect(app).toContain("$$('.nav').forEach");
+  expect(app).toContain("$$('[data-tab-link]').forEach");
+  expect(app).toContain("$$('[data-back=\"role\"]').forEach");
   expect(app).toContain("$$('input[name=\"fulfillment_type\"]').forEach");
   expect(app).not.toContain("async function formatSchedule");
 });
