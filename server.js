@@ -144,7 +144,7 @@ app.post("/api/admin/logout", (req, res) => {
 // Customer-facing routes remain public. Everything else under /api is admin-only.
 app.use("/api", (req, res, next) => {
   if (req.path === "/health" || req.path === "/admin/login" || req.path === "/admin/logout") return next();
-  if (req.method === "GET" && req.path === "/menu") return next();
+  if (req.method === "GET" && /^\/menu(?:\/[^/]+)?$/.test(req.path)) return next();
   if (req.method === "POST" && /^\/customers(?:\/session)?$/.test(req.path)) return next();
   if (req.method === "POST" && req.path === "/orders") return next();
   if (req.method === "GET" && /^\/customers\/[^/]+\/orders$/.test(req.path)) return next();
