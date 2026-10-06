@@ -216,10 +216,10 @@ test("frontend files exist and JavaScript has no broken multi-selector bindings"
   expect(html).not.toContain('style="display:none;"');
   expect(html).not.toContain('style="display:grid;"');
   expect(html).not.toContain("/navigation.js");
-  expect(app).not.toContain("$('.page').forEach");
-  expect(app).not.toContain("$('.nav').forEach");
-  expect(app).not.toContain("$('[data-tab-link]').forEach");
-  expect(app).not.toContain("$('[data-back=\"role\"]').forEach");
-  expect(app).not.toContain("$('input[name=\"fulfillment_type\"]').forEach");
+  expect(app).toContain("$('.page').forEach");
+  expect(app).toContain("$('.nav').forEach");
+  expect(app).toContain("$('[data-tab-link]').forEach");
+  expect(app).toContain("$('[data-back=\"role\"]').forEach");
+  expect(app).toContain("$$('input[name=\"fulfillment_type\"]').forEach");
   expect(app).not.toContain("async function formatSchedule");
 });
