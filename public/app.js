@@ -62,18 +62,21 @@ function logoutAdmin(){adminToken='';localStorage.removeItem('foodhub_admin_toke
 function logoutCustomer(){currentCustomer=null;localStorage.removeItem('foodhub_customer');cart=[];show('roleScreen')}
 
 function setup(){
-  $('#adminChoice').onclick=()=>show('adminLogin');$('#customerChoice').onclick=()=>show('customerEntry');
-  $$('[data-back="role"]').forEach(b=>b.onclick=()=>show('roleScreen'));
-  $('#adminLoginForm').onsubmit=async e=>{e.preventDefault();$('#loginError').textContent='';try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('#adminUsername').value,password:$('#adminPassword').value})});adminToken=d.token;localStorage.setItem('foodhub_admin_token',adminToken);show('adminApp');await loadAdmin()}catch(err){$('#loginError').textContent=err.message}};
-  $('#customerEntryForm').onsubmit=async e=>{e.preventDefault();$('#customerError').textContent='';try{const d=await api('/api/customers/session',{method:'POST',body:JSON.stringify({full_name:$('#customerName').value,contact_number:$('#customerPhone').value,address:$('#customerAddress').value})});currentCustomer=d;localStorage.setItem('foodhub_customer',JSON.stringify(d));$('#customerGreeting').textContent='Hi, '+d.full_name.split(' ')[0]+' 👋';show('customerApp');await loadCustomer()}catch(err){$('#customerError').textContent=err.message}};
-  $('#adminLogout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}catch(_){}logoutAdmin()};
-  $('#customerLogout').onclick=logoutCustomer;
-  $$('.nav').forEach(b=>b.onclick=()=>adminTab(b.dataset.tab));$$('[data-tab-link]').forEach(b=>b.onclick=()=>adminTab(b.dataset.tabLink));
-  $('#menuToggle').onclick=()=>$('#sidebar').classList.toggle('open');
-  $('#addMenuBtn').onclick=()=>menuForm();$('#addCustomerBtn').onclick=()=>customerForm();
-  $('#menuSearch').oninput=renderMenu;$('#menuFilter').onchange=renderMenu;$('#customerSearch').oninput=renderCustomers;$('#orderSearch').oninput=renderOrders;$('#orderFilter').onchange=renderOrders;
-  $('#customerMenuSearch').oninput=renderCustomerMenu;$('#placeCustomerOrder').onclick=placeCustomerOrder;
-  $('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};document.onkeydown=e=>{if(e.key==='Escape')closeModal()};
+  // Bind each control independently so one optional control cannot prevent the role buttons from working.
+  const bind=(selector,event,handler)=>{const el=$(selector);if(el)el.addEventListener(event,handler);};
+  bind('#adminChoice','click',()=>show('adminLogin'));
+  bind('#customerChoice','click',()=>show('customerEntry'));
+  $('[data-back="role"]').forEach(b=>b.onclick=()=>show('roleScreen'));
+  bind('#adminLoginForm','submit',async e=>{e.preventDefault();$('#loginError').textContent='';try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('#adminUsername').value,password:$('#adminPassword').value})});adminToken=d.token;localStorage.setItem('foodhub_admin_token',adminToken);show('adminApp');await loadAdmin()}catch(err){$('#loginError').textContent=err.message}});
+  bind('#customerEntryForm','submit',async e=>{e.preventDefault();$('#customerError').textContent='';try{const d=await api('/api/customers/session',{method:'POST',body:JSON.stringify({full_name:$('#customerName').value,contact_number:$('#customerPhone').value,address:$('#customerAddress').value})});currentCustomer=d;localStorage.setItem('foodhub_customer',JSON.stringify(d));$('#customerGreeting').textContent='Hi, '+d.full_name.split(' ')[0]+' 👋';show('customerApp');await loadCustomer()}catch(err){$('#customerError').textContent=err.message}});
+  bind('#adminLogout','click',async()=>{try{await api('/api/admin/logout',{method:'POST'})}catch(_){}logoutAdmin()});
+  bind('#customerLogout','click',logoutCustomer);
+  $('.nav').forEach(b=>b.onclick=()=>adminTab(b.dataset.tab));$('[data-tab-link]').forEach(b=>b.onclick=()=>adminTab(b.dataset.tabLink));
+  bind('#menuToggle','click',()=>$('#sidebar').classList.toggle('open'));
+  bind('#addMenuBtn','click',()=>menuForm());bind('#addCustomerBtn','click',()=>customerForm());
+  bind('#menuSearch','input',renderMenu);bind('#menuFilter','change',renderMenu);bind('#customerSearch','input',renderCustomers);bind('#orderSearch','input',renderOrders);bind('#orderFilter','change',renderOrders);
+  bind('#customerMenuSearch','input',renderCustomerMenu);bind('#placeCustomerOrder','click',placeCustomerOrder);
+  bind('#modal','click',e=>{if(e.target.id==='modal')closeModal()});document.onkeydown=e=>{if(e.key==='Escape')closeModal()};
 }
 window.addEventListener('DOMContentLoaded',()=>{
   // Always dismiss the welcome screen after exactly 3 seconds.
