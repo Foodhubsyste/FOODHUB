@@ -7,6 +7,9 @@ const menuRoutes = require("./routes/menuRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const menuController = require("./controllers/menuController");
+const customerController = require("./controllers/customerController");
+const orderController = require("./controllers/orderController");
 
 const app = express();
 const PORT = process.env.PORT || 4444;
@@ -49,12 +52,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Public customer-facing endpoints.
-app.get("/api/menu", menuRoutes);
-app.get("/api/menu/:id", menuRoutes);
-app.post("/api/customers/session", customerRoutes);
-app.post("/api/orders", orderRoutes);
-app.get("/api/customers/:id/orders", customerRoutes);
+// Public customer-facing endpoints still use the same controllers.
+app.get("/api/menu", menuController.list);
+app.get("/api/menu/:id", menuController.show);
+app.post("/api/customers/session", require("./middleware/validation").bodyValidator(require("./middleware/validation").validateCustomer), customerController.session);
+app.post("/api/orders", require("./middleware/validation").orderValidator, orderController.create);
+app.get("/api/customers/:id/orders", customerController.orders);
 
 // Admin CRUD/report endpoints.
 app.use("/api/menu", requireAdmin, menuRoutes);
