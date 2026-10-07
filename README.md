@@ -159,3 +159,12 @@ Final Phase 4 materials:
 - `deliverable4.test.js`
 
 The final package covers QA evidence, deployment evidence, presentation preparation, retrospective, contribution evidence, and individual defense requirements.
+
+
+## Final Defense & Database Materials
+
+- `docs/DEFENSE_TOMORROW.md` — defense rehearsal guide
+- `docs/database-defense.md` — database explanation for defense
+- `database/schema.sql` — MySQL relational schema
+- `database/seed.sql` — sample database seed
+- `database/ERD.md` — entity-relationship diagram
