@@ -13,6 +13,9 @@ A complete CRUD web application for small home-based food sellers to manage menu
 - Persistent JSON data store in `data/db.json`
 - Responsive browser interface with Admin and Customer dashboards
 - Week 6 reusable view components with loading, empty, and error states
+- Week 7 asynchronous Create/Update form binding with visible loading, success, and error feedback
+- Week 8 consistent error handling, not-found states, confirmations, and Retry feedback
+- Deliverable 3 submission documentation covering Weeks 6–8 and individual contribution evidence
 - Customer cart, pickup/delivery checkout, scheduling, and order history
 - Admin order workflow: pending → confirmed → ready → completed/cancelled
 - Automatic stock deduction/restoration and sales synchronization
@@ -38,6 +41,7 @@ Open `http://localhost:4444`.
 - `server.js` — Express server and REST API
 - `public/index.html` — application interface
 - `public/components.js` — reusable Week 6 view components
+- `week7.test.js` — Week 7 async form-binding regression tests
 - `public/app.js` — frontend behavior and API calls
 - `public/styles.css` — UI styling
 - `data/db.json` — persistent application data
@@ -83,3 +87,18 @@ npm start
 ```
 
 The test suite also performs JavaScript syntax checks before running API regression tests.
+
+
+## Deliverable 3 — Interface & View Binding
+
+The final Phase 3 submission is documented in `docs/DELIVERABLE3_INTERFACE_VIEW_BINDING.md`.
+
+Supporting evidence:
+- `docs/components.md`
+- `docs/binding-tests.md`
+- `docs/feedback-matrix.md`
+- `docs/feedback-tests.md`
+- `docs/individual-contribution.md`
+- `docs/ai-notes/week-06.md`
+- `docs/ai-notes/week-07.md`
+- `docs/ai-notes/week-08.md`
