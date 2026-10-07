@@ -17,7 +17,13 @@
 
 **Fix:** Run the component source inside an explicit VM context containing a `window` object.
 
-**Verification:** The final release branch contains the corrected test harness. CI must be rerun and show green before this issue is considered closed.
+**Verification:** The final release branch contains the corrected test harness. GitHub Actions must be rerun and show green before this issue is considered closed.
+
+**Tracker:** GitHub Issue #32.
+
+## Dependency audit finding
+
+The CI `npm install` audit reported 22 vulnerabilities (19 moderate, 3 high). The exact transitive advisories need to be reviewed with the package manager before changing dependency versions. Track this as release security debt rather than applying an unverified blanket upgrade.
 
 ## Manual QA bugs
 
