@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const { config, validateProductionConfig } = require("./config");
 const { ensureDb } = require("./services/database");
 const { failure } = require("./utils/response");
 const { createAuthController } = require("./controllers/authController");
@@ -12,7 +13,7 @@ const customerController = require("./controllers/customerController");
 const orderController = require("./controllers/orderController");
 
 const app = express();
-const PORT = process.env.PORT || 4444;
+const PORT = config.port;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -27,8 +28,9 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "foodhub123";
+validateProductionConfig();
+const ADMIN_USERNAME = config.adminUsername;
+const ADMIN_PASSWORD = config.adminPassword;
 const adminTokens = new Set();
 
 const auth = createAuthController(adminTokens, ADMIN_USERNAME, ADMIN_PASSWORD);
