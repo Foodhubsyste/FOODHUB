@@ -68,6 +68,11 @@ Improvement identified:
 Do not mark a row complete without real evidence.
 
 
+## Release blockers and tracked findings
+
+- GitHub Issue #32: CI component test browser-context bug; fix prepared in the final release branch.
+- GitHub Issue #33: dependency audit reported 22 vulnerabilities (19 moderate, 3 high); advisory review still required.
+
 ## Visual evidence
 
 The team supplied 15 screenshots covering role selection, admin login/error, dashboard, menu/customer management, empty states, customer checkout, order history, and admin order visibility.
