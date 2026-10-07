@@ -115,3 +115,47 @@ Week 10 QA artifacts:
 - `week10.test.js`
 
 Feature freeze applies during the QA pass. The team should run the matrix manually, log real failures as P0/P1/P2 issues, and fix them in the following week.
+
+
+## Week 11 — Fix, Clean Up & Ship
+
+Release-readiness artifacts:
+- `config.js` — centralized environment configuration
+- `.env.example` — documented environment variables without secrets
+- `Procfile` — generic web process entrypoint
+- `docs/deployment.md` — deployment and live smoke-test notes
+- `docs/RELEASE_CHECKLIST.md` — release gate
+- `docs/WEEK11_DELIVERABLE.md` — Week 11 checklist
+- `docs/ai-notes/week-11.md` — AI prompt log
+- `week11.test.js` — release-readiness regression tests
+
+Production configuration requires explicit admin credentials and supports an environment-configurable JSON data-file path.
+
+
+## Week 12 — Final Presentation & Defense
+
+Final preparation artifacts:
+- `docs/retrospective.md`
+- `docs/presentation-outline.md`
+- `docs/final-demo-script.md`
+- `docs/defense-guide.md`
+- `docs/final-submission-checklist.md`
+- `docs/WEEK12_DELIVERABLE.md`
+- `week12.test.js`
+
+The Week 12 defense is individual and unassisted. The preparation guide is for rehearsal only.
+
+
+## Deliverable 4 — QA, Deployment & Final Presentation
+
+Final Phase 4 materials:
+- `docs/DELIVERABLE4_QA_DEPLOYMENT_PRESENTATION.md`
+- `docs/DELIVERABLE4_CHECKLIST.md`
+- `docs/final-evidence.md`
+- `docs/final-presentation.md`
+- `docs/test-matrix.md`
+- `docs/deployment.md`
+- `docs/retrospective.md`
+- `deliverable4.test.js`
+
+The final package covers QA evidence, deployment evidence, presentation preparation, retrospective, contribution evidence, and individual defense requirements.

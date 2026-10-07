@@ -9,9 +9,9 @@ describe("Week 6 — view layer and component architecture", () => {
 
   beforeAll(() => {
     const source = fs.readFileSync(path.join(root, "public", "components.js"), "utf8");
-    global.window = {};
-    vm.runInThisContext(source);
-    components = global.window.FoodHubComponents;
+    const browserContext = { window: {} };
+    vm.runInNewContext(source, browserContext);
+    components = browserContext.window.FoodHubComponents;
   });
 
   test("reusable component library exposes loading, empty, error, table, badge, and stat views", () => {

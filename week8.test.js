@@ -9,10 +9,10 @@ describe("Week 8 — error handling and feedback", () => {
   let app;
 
   beforeAll(() => {
-    global.window = {};
+    const browserContext = { window: {} };
     const componentSource = fs.readFileSync(path.join(root, "public", "components.js"), "utf8");
-    vm.runInThisContext(componentSource);
-    UI = global.window.FoodHubComponents;
+    vm.runInNewContext(componentSource, browserContext);
+    UI = browserContext.window.FoodHubComponents;
     app = fs.readFileSync(path.join(root, "public", "app.js"), "utf8");
   });
 

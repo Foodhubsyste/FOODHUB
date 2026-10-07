@@ -1,8 +1,9 @@
 const fs = require("fs");
 const path = require("path");
+const { config } = require("../config");
 
-const DATA_DIR = path.join(__dirname, "..", "data");
-const DATA_FILE = path.join(DATA_DIR, "db.json");
+const DATA_FILE = config.dataFile;
+const DATA_DIR = path.dirname(DATA_FILE);
 
 const initialDb = {
   menuItems: [
