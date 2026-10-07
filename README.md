@@ -102,3 +102,16 @@ Supporting evidence:
 - `docs/ai-notes/week-06.md`
 - `docs/ai-notes/week-07.md`
 - `docs/ai-notes/week-08.md`
+
+
+## Week 10 — Manual QA & Bug Hunting
+
+Week 10 QA artifacts:
+- `docs/test-matrix.md`
+- `docs/qa-run-sheet.md`
+- `docs/bug-report-template.md`
+- `docs/WEEK10_DELIVERABLE.md`
+- `docs/ai-notes/week-10.md`
+- `week10.test.js`
+
+Feature freeze applies during the QA pass. The team should run the matrix manually, log real failures as P0/P1/P2 issues, and fix them in the following week.
