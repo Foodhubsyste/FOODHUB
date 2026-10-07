@@ -15,6 +15,10 @@ Use the Week 10 triaged bug list to fix serious defects, pay down a small amount
 - [x] Release checklist
 - [x] Week 11 AI prompt log
 - [x] Week 11 regression test scaffold
+- [x] Repeatable production smoke-test script
+- [x] Docker deployment image
+- [x] P1 CI test-harness bug tracked as GitHub Issue #32
+- [x] P1 dependency-audit finding tracked as GitHub Issue #33
 
 ## Deliberately not falsely claimed
 
@@ -34,6 +38,10 @@ FOODHUB currently uses a JSON file instead of a relational migration-based datab
 ## Release evidence
 
 Fill in the provider, URL, release commit, deployment date, smoke-test results, and reviewed PR links in `docs/deployment.md` after the actual release.
+
+## Release security follow-up
+
+The CI audit reported 22 dependency vulnerabilities (19 moderate, 3 high). GitHub Issue #33 tracks the required advisory review and safe dependency update process.
 
 ## Next step
 
