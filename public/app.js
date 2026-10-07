@@ -105,10 +105,11 @@ function menuForm(id){const x=id?menu.find(a=>a.id===id):{};openModal('<div clas
 }}
 async function deleteMenu(id){
   if(!confirm('Are you sure you want to delete this menu item?'))return;
-  const buttons=$('button[onclick*="deleteMenu(\\''+id+'\\')"]');buttons.forEach(b=>b.disabled=true);
+  const button=document.activeElement;
+  if(button && button.tagName==='BUTTON') button.disabled=true;
   try{await api('/api/menu/'+id,{method:'DELETE'});await loadAdmin();toast('Menu item deleted.')}
   catch(e){const message=friendlyError(e,"We couldn't delete that menu item. Try again.");toast(message,'error','Retry',()=>deleteMenu(id))}
-  finally{buttons.forEach(b=>b.disabled=false)}
+  finally{if(button && button.tagName==='BUTTON')button.disabled=false}
 }
 function customerForm(id){const x=id?customers.find(a=>a.id===id):{};openModal('<div class="modal-head"><h2>'+(id?'Edit':'Add')+' Customer</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="customerForm" class="form-grid"><label class="form-field full-field">FULL NAME<input name="full_name" required value="'+esc(x.full_name||'')+'"></label><label class="form-field full-field">PHONE NUMBER<input name="contact_number" required value="'+esc(x.contact_number||'')+'"></label><label class="form-field full-field">ADDRESS<textarea name="address" required>'+esc(x.address||'')+'</textarea></label><div class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Save Customer</button></div></form></div>');$('#customerForm').onsubmit=async e=>{
   e.preventDefault();
