@@ -67,16 +67,16 @@ For the final evidence, run the automated smoke test at the **public URL**, then
 
 ## Deployment record
 
-**Provider:**  
-**Public URL:**  
+**Provider:** Railway  
+**Public URL:** https://foodhub-production-8be2.up.railway.app/  
 **Release commit:**  
 **Deployment date/time:**  
 **Environment variables configured:** Yes / No  
 **Health check:** PASS / FAIL  
 **Happy-path smoke test:** PASS / FAIL  
 **422 failure-path smoke test:** PASS / FAIL  
-**Automated smoke test output:**
-**Manual browser smoke evidence:**
+**Automated smoke test output:** PENDING — URL supplied by team; runtime endpoint could not be independently reached from this tool environment.
+**Manual browser smoke evidence:** PENDING — complete against the deployed Railway URL.
 **Notes:**
 
 Do not mark the runtime checks PASS until they have actually been performed.
