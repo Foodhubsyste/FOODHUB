@@ -16,9 +16,9 @@ This deliverable spans Weeks 9–12.
 
 The final submission must provide a live public URL where CRUD works end to end and failures are handled gracefully. The repository now also includes a repeatable production smoke test in `scripts/smoke-test.js` and a Dockerfile for deployment preparation.
 
-**Live URL:** ______________________________
+**Live URL:** https://foodhub-production-8be2.up.railway.app/
 
-**Host/provider:** __________________________
+**Host/provider:** Railway
 
 **Release commit:** _________________________
 
