@@ -27,3 +27,8 @@
 button:disabled{opacity:.65;cursor:not-allowed;transform:none!important}
 .form-error{min-height:18px;color:#c2383d;font-size:12px;font-weight:600}
 button[aria-busy="true"]{cursor:wait}
+
+/* Week 8 — shared feedback and retry */
+.toast-msg{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.toast-action{background:#fff0e9;color:var(--orange);border-radius:8px;padding:7px 10px;font-size:10px;font-weight:800;white-space:nowrap}
+.toast-action:hover{background:#ffe2d6}

@@ -38,7 +38,21 @@ function formError(form,message,field=null){
   const box=form?.querySelector('.form-error');
   if(box)box.textContent=field?field+': '+message:message;
 }
-function toast(msg,type='success'){const x=document.createElement('div');x.className='toast-msg '+type;x.textContent=msg;$('#toast').appendChild(x);setTimeout(()=>x.remove(),3200)}
+function toast(msg,type='success',actionLabel='',action){
+  const x=document.createElement('div');x.className='toast-msg '+type;
+  const text=document.createElement('span');text.textContent=msg;x.appendChild(text);
+  if(action){
+    const btn=document.createElement('button');btn.className='toast-action';btn.type='button';btn.textContent=actionLabel||'Retry';btn.onclick=()=>{x.remove();action()};x.appendChild(btn);
+  }
+  $('#toast').appendChild(x);setTimeout(()=>x.remove(),5000);
+}
+function friendlyError(err,fallback='Something went wrong. Please try again.'){
+  if(err?.status===404)return 'We could not find that record. It may have been removed.';
+  if(err?.status===422)return err.message||'Please check the highlighted fields and try again.';
+  if(!err?.status)return 'We could not connect to FOODHUB. Please check your connection and try again.';
+  return err.message||fallback;
+}
+
 function show(id){['welcomeScreen','roleScreen','adminLogin','customerEntry','adminApp','customerApp'].forEach(x=>{const el=$('#'+x);if(el)el.classList.toggle('hidden',x!==id)})}
 function table(headers,rows,empty='No records found.'){return UI.table(headers,rows,empty,'There is nothing to display yet.')}
 
@@ -52,7 +66,14 @@ function setAdminState(state,message=''){
 async function loadAdmin(){
   setAdminState('loading');
   try{[menu,customers,orders,sales]=await Promise.all([api('/api/menu'),api('/api/customers'),api('/api/orders'),api('/api/sales')]);renderAdmin();const d=await api('/api/dashboard');renderStats(d)}
-  catch(e){if(e.message.includes('login'))logoutAdmin();else{setAdminState('error',e.message);toast(e.message,'error')}}
+  catch(e){
+  if(e.message.includes('login'))logoutAdmin();
+  else{
+    const message=friendlyError(e);
+    setAdminState('error',message);
+    toast(message,'error','Retry',loadAdmin);
+  }
+}
 }
 function renderStats(d){
   const a=[['🍽','Menu Items',d.menu_count,'Catalog'],['♙','Customers',d.customer_count,'Registered'],['▤','Orders',d.order_count,'All orders'],['₱','Revenue',money(d.revenue),'Completed sales'],['◷','Pending',d.pending_orders,'Needs attention'],['✓','Completed',d.completed_orders,'Finished'],['⚠','Low Stock',d.low_stock,'Inventory alert']];
@@ -78,10 +99,18 @@ function menuForm(id){const x=id?menu.find(a=>a.id===id):{};openModal('<div clas
     await api(id?'/api/menu/'+id:'/api/menu',{method:id?'PUT':'POST',body:JSON.stringify(body)});
     closeModal(); await loadAdmin(); toast(id?'Menu updated.':'Menu added.');
   }catch(err){
-    formError(form,err.message,err.status===422?err.field:null); toast(err.message,'error');
+    const message=friendlyError(err);
+    formError(form,message,err.status===422?err.field:null); toast(message,'error');
   }finally{setFormBusy(form,false);}
 }}
-async function deleteMenu(id){if(!confirm('Delete this menu item?'))return;try{await api('/api/menu/'+id,{method:'DELETE'});await loadAdmin();toast('Menu item deleted.')}catch(e){toast(e.message,'error')}}
+async function deleteMenu(id){
+  if(!confirm('Are you sure you want to delete this menu item?'))return;
+  const button=document.activeElement;
+  if(button && button.tagName==='BUTTON') button.disabled=true;
+  try{await api('/api/menu/'+id,{method:'DELETE'});await loadAdmin();toast('Menu item deleted.')}
+  catch(e){const message=friendlyError(e,"We couldn't delete that menu item. Try again.");toast(message,'error','Retry',()=>deleteMenu(id))}
+  finally{if(button && button.tagName==='BUTTON')button.disabled=false}
+}
 function customerForm(id){const x=id?customers.find(a=>a.id===id):{};openModal('<div class="modal-head"><h2>'+(id?'Edit':'Add')+' Customer</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><form id="customerForm" class="form-grid"><label class="form-field full-field">FULL NAME<input name="full_name" required value="'+esc(x.full_name||'')+'"></label><label class="form-field full-field">PHONE NUMBER<input name="contact_number" required value="'+esc(x.contact_number||'')+'"></label><label class="form-field full-field">ADDRESS<textarea name="address" required>'+esc(x.address||'')+'</textarea></label><div class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary-btn">Save Customer</button></div></form></div>');$('#customerForm').onsubmit=async e=>{
   e.preventDefault();
   const form=e.target; formError(form,'');
@@ -94,7 +123,11 @@ function customerForm(id){const x=id?customers.find(a=>a.id===id):{};openModal('
     formError(form,err.message,err.status===422?err.field:null); toast(err.message,'error');
   }finally{setFormBusy(form,false);}
 }}
-async function deleteCustomer(id){if(!confirm('Delete this customer?'))return;try{await api('/api/customers/'+id,{method:'DELETE'});await loadAdmin();toast('Customer deleted.')}catch(e){toast(e.message,'error')}}
+async function deleteCustomer(id){
+  if(!confirm('Are you sure you want to delete this customer?'))return;
+  try{await api('/api/customers/'+id,{method:'DELETE'});await loadAdmin();toast('Customer deleted.')}
+  catch(e){const message=friendlyError(e,"We couldn't delete that customer. Try again.");toast(message,'error','Retry',()=>deleteCustomer(id))}
+}
 function orderEdit(id){const x=orders.find(a=>a.id===id);openModal('<div class="modal-head"><h2>Update Order</h2><button class="close" onclick="closeModal()">×</button></div><div class="modal-body"><p><b>'+esc(x.order_number)+'</b> · '+money(x.total_amount)+'</p><form id="orderEditForm" class="form-grid"><label class="form-field">ORDER STATUS<select name="order_status">'+['pending','confirmed','ready','completed','cancelled'].map(v=>'<option '+(v===x.order_status?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field">PAYMENT STATUS<select name="payment_status">'+['unpaid','partial','paid'].map(v=>'<option '+(v===x.payment_status?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label class="form-field full-field">PAYMENT METHOD<select name="payment_method">'+['cash','gcash','bank transfer'].map(v=>'<option '+(v===x.payment_method?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="form-error full-field" role="alert"></div><div class="form-actions full-field"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button type="submit" class="primary-btn">Update</button></div></form></div>');$('#orderEditForm').onsubmit=async e=>{
   e.preventDefault();
   const form=e.target; formError(form,'');
@@ -144,8 +177,15 @@ async function loadCustomer(){
 }
 async function loadCustomerOrders(){
   if(!currentCustomer)return;
-  const os=await api('/api/customers/'+currentCustomer.id+'/orders');
-  $('#customerOrders').innerHTML=table(['Order','Items','Total','Fulfillment','Schedule'],os.map(o=>'<tr><td><b>'+esc(o.order_number)+'</b></td><td>'+o.items.map(i=>esc(i.name)+' × '+i.quantity).join('<br>')+'</td><td><b>'+money(o.total_amount)+'</b></td><td><span class="badge info">'+(o.fulfillment_type==='delivery'?'🚚 Delivery':'🏪 Pickup')+'</span>'+(o.delivery_location?'<small style="display:block;color:#8d95a0;margin-top:4px">📍 '+esc(o.delivery_location)+'</small>':'')+'</td><td>'+formatSchedule(o)+'</td></tr>'),'You have not placed any orders yet.')}
+  try{
+    const os=await api('/api/customers/'+currentCustomer.id+'/orders');
+    $('#customerOrders').innerHTML=table(['Order','Items','Total','Fulfillment','Schedule'],os.map(o=>'<tr><td><b>'+esc(o.order_number)+'</b></td><td>'+o.items.map(i=>esc(i.name)+' × '+i.quantity).join('<br>')+'</td><td><b>'+money(o.total_amount)+'</b></td><td><span class="badge info">'+(o.fulfillment_type==='delivery'?'🚚 Delivery':'🏪 Pickup')+'</span>'+(o.delivery_location?'<small style="display:block;color:#8d95a0;margin-top:4px">📍 '+esc(o.delivery_location)+'</small>':'')+'</td><td>'+formatSchedule(o)+'</td></tr>'),'You have not placed any orders yet.')
+  }catch(e){
+    const message=friendlyError(e);
+    $('#customerOrders').innerHTML=e.status===404?UI.notFoundState('Orders not found.',message):UI.errorState(message);
+    toast(message,'error','Retry',loadCustomerOrders);
+  }
+}
 function checkoutForm(){
   const now=new Date();
   const minDate=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
@@ -162,7 +202,7 @@ function checkoutForm(){
     await api('/api/orders',{method:'POST',body:JSON.stringify({customer_id:currentCustomer.id,items:cart.map(c=>({menu_id:c.id,quantity:c.quantity})),fulfillment_type:f.get('fulfillment_type'),delivery_location:String(f.get('delivery_location')||'').trim(),scheduled_datetime:scheduled})});
     cart=[]; closeModal(); await loadCustomer(); toast(delivery?'Delivery order placed!':'Pickup order placed!');
   }catch(err){
-    $('#checkoutError').textContent=(err.status===422&&err.field?err.field+': ':'')+err.message;
+    $('#checkoutError').textContent=(err.status===422&&err.field?err.field+': ':'')+friendlyError(err);
   }finally{
     submit.disabled=false; submit.removeAttribute('aria-busy'); submit.textContent='Place Order';
   }

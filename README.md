@@ -14,6 +14,7 @@ A complete CRUD web application for small home-based food sellers to manage menu
 - Responsive browser interface with Admin and Customer dashboards
 - Week 6 reusable view components with loading, empty, and error states
 - Week 7 asynchronous Create/Update form binding with visible loading, success, and error feedback
+- Week 8 consistent error handling, not-found states, confirmations, and Retry feedback
 - Customer cart, pickup/delivery checkout, scheduling, and order history
 - Admin order workflow: pending → confirmed → ready → completed/cancelled
 - Automatic stock deduction/restoration and sales synchronization

@@ -23,6 +23,14 @@ window.FoodHubComponents = (() => {
       '</div>';
   }
 
+  function notFoundState(title = "Record not found.", message = "The item may have been removed or the link may be outdated.") {
+    return '<div class="state-view error-state" role="alert">' +
+      '<div class="state-icon" aria-hidden="true">🔎</div>' +
+      '<strong>' + escapeHtml(title) + '</strong>' +
+      '<span>' + escapeHtml(message) + '</span>' +
+      '</div>';
+  }
+
   function errorState(message = "Something went wrong. Please try again.") {
     return '<div class="state-view error-state" role="alert">' +
       '<div class="state-icon" aria-hidden="true">⚠️</div>' +
@@ -53,5 +61,9 @@ window.FoodHubComponents = (() => {
       '</strong><i>' + escapeHtml(note) + '</i></article>';
   }
 
-  return { escapeHtml, loadingState, emptyState, errorState, badge, table, stat };
+  function feedback(message, type = "error") {
+    return { message: String(message || "Something went wrong. Please try again."), type };
+  }
+
+  return { escapeHtml, loadingState, emptyState, notFoundState, errorState, badge, table, stat, feedback };
 })();
