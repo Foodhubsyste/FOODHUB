@@ -14,7 +14,7 @@ This deliverable spans Weeks 9–12.
 
 ### 1. Deployed application
 
-The final submission must provide a live public URL where CRUD works end to end and failures are handled gracefully.
+The final submission must provide a live public URL where CRUD works end to end and failures are handled gracefully. The repository now also includes a repeatable production smoke test in `scripts/smoke-test.js` and a Dockerfile for deployment preparation.
 
 **Live URL:** ______________________________
 
