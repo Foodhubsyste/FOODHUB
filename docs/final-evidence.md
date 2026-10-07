@@ -66,3 +66,12 @@ Validation location explained:
 Improvement identified:
 
 Do not mark a row complete without real evidence.
+
+
+## Visual evidence
+
+The team supplied 15 screenshots covering role selection, admin login/error, dashboard, menu/customer management, empty states, customer checkout, order history, and admin order visibility.
+
+See `docs/visual-ui-evidence.md` for the evidence index and limitations.
+
+The screenshots support interface/demo evidence, but they are not a substitute for public deployment, live smoke testing, manual QA completion, P0/P1 resolution, peer review, or the individual defense.
