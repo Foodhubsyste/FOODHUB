@@ -15,6 +15,7 @@ A complete CRUD web application for small home-based food sellers to manage menu
 - Week 6 reusable view components with loading, empty, and error states
 - Week 7 asynchronous Create/Update form binding with visible loading, success, and error feedback
 - Week 8 consistent error handling, not-found states, confirmations, and Retry feedback
+- Deliverable 3 submission documentation covering Weeks 6–8 and individual contribution evidence
 - Customer cart, pickup/delivery checkout, scheduling, and order history
 - Admin order workflow: pending → confirmed → ready → completed/cancelled
 - Automatic stock deduction/restoration and sales synchronization
@@ -86,3 +87,18 @@ npm start
 ```
 
 The test suite also performs JavaScript syntax checks before running API regression tests.
+
+
+## Deliverable 3 — Interface & View Binding
+
+The final Phase 3 submission is documented in `docs/DELIVERABLE3_INTERFACE_VIEW_BINDING.md`.
+
+Supporting evidence:
+- `docs/components.md`
+- `docs/binding-tests.md`
+- `docs/feedback-matrix.md`
+- `docs/feedback-tests.md`
+- `docs/individual-contribution.md`
+- `docs/ai-notes/week-06.md`
+- `docs/ai-notes/week-07.md`
+- `docs/ai-notes/week-08.md`
