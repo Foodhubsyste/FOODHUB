@@ -10,8 +10,8 @@ This page tracks what can be completed in the repository and what still requires
 | P0/P1 fixes | CI test-harness P1 fix prepared | Fix real manual P0/P1 defects from QA |
 | Critical dependency audit | P1 issue #33 recorded | Run audit, review advisories, safely update dependencies |
 | Production config | config.js and .env.example implemented | Set real production env vars |
-| Deployment | Dockerfile and deployment/smoke documentation prepared | Deploy to a public host |
-| Live smoke test | scripts/smoke-test.js implemented | Run against real public URL |
+| Deployment | Dockerfile and deployment/smoke documentation prepared | **Team reports Railway deployment at https://foodhub-production-8be2.up.railway.app/; live verification still required** |
+| Live smoke test | scripts/smoke-test.js implemented | **Run against Railway URL and record output** |
 | Presentation | deck outline and final demo script prepared | Rehearse and deliver |
 | Backup demo | Backup procedure documented | Capture real screenshots/recording |
 | Retrospective | retrospective document prepared | Team reviews and finalizes it |
