@@ -4,6 +4,7 @@
 Finish the project with an honest retrospective, professional presentation, live deployed demonstration, and individual unassisted code defense.
 
 ## Added preparation artifacts
+- [x] Database schema, seed data, ERD, and database defense notes
 - [x] docs/retrospective.md
 - [x] docs/presentation-outline.md
 - [x] docs/final-demo-script.md
