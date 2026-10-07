@@ -144,3 +144,18 @@ Final preparation artifacts:
 - `week12.test.js`
 
 The Week 12 defense is individual and unassisted. The preparation guide is for rehearsal only.
+
+
+## Deliverable 4 — QA, Deployment & Final Presentation
+
+Final Phase 4 materials:
+- `docs/DELIVERABLE4_QA_DEPLOYMENT_PRESENTATION.md`
+- `docs/DELIVERABLE4_CHECKLIST.md`
+- `docs/final-evidence.md`
+- `docs/final-presentation.md`
+- `docs/test-matrix.md`
+- `docs/deployment.md`
+- `docs/retrospective.md`
+- `deliverable4.test.js`
+
+The final package covers QA evidence, deployment evidence, presentation preparation, retrospective, contribution evidence, and individual defense requirements.
