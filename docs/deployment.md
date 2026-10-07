@@ -49,7 +49,9 @@ Important: many free/container hosts use ephemeral filesystems. A production dep
 
 ## Live smoke test
 
-Run these at the **public URL**, not localhost:
+The repository also provides `npm run smoke` using `scripts/smoke-test.js`. Set `BASE_URL`, `SMOKE_ADMIN_USERNAME`, and `SMOKE_ADMIN_PASSWORD` to real production values. The script checks health, authentication, protection, menu read/create/update/delete, 422 validation, and deleted-record 404.
+
+For the final evidence, run the automated smoke test at the **public URL**, then complete the manual browser smoke checks below.
 
 - Admin login succeeds with production credentials.
 - Menu can be viewed.
@@ -73,6 +75,8 @@ Run these at the **public URL**, not localhost:
 **Health check:** PASS / FAIL  
 **Happy-path smoke test:** PASS / FAIL  
 **422 failure-path smoke test:** PASS / FAIL  
+**Automated smoke test output:**
+**Manual browser smoke evidence:**
 **Notes:**
 
 Do not mark the runtime checks PASS until they have actually been performed.
