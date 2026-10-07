@@ -4,8 +4,8 @@ Fill this page with real evidence before submission.
 
 ## Deployment
 
-Provider:
-Public URL:
+Provider: Railway
+Public URL: https://foodhub-production-8be2.up.railway.app/
 Release commit:
 Deployment date/time:
 Health endpoint result:
@@ -27,7 +27,7 @@ Issue links:
 
 | Check | Result | Evidence |
 |---|---|---|
-| Public URL reachable | PENDING | |
+| Public URL reachable | TEAM-REPORTED | https://foodhub-production-8be2.up.railway.app/ |
 | Admin login | PENDING | |
 | Create | PENDING | |
 | Read | PENDING | |
