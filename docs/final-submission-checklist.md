@@ -25,6 +25,11 @@
 - [ ] Each member can identify where validation lives.
 - [ ] Each member can state one improvement.
 
+## Database
+- [ ] Current datastore choice explained accurately.
+- [ ] MySQL schema/ERD available as the planned relational design.
+- [ ] If using MySQL in production, connection/configuration and migration evidence are recorded.
+
 ## Evidence
 - [ ] docs/retrospective.md complete.
 - [ ] docs/deployment.md contains the real public URL and deployment notes.
