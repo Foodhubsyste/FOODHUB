@@ -50,3 +50,10 @@ State the value delivered and the main lessons from the full build.
 ## Presenter note
 
 The actual class demo should be based on the deployed application. Replace placeholders with real evidence immediately before presentation.
+
+
+## Database slide note
+
+**Current datastore:** The deployed Node/Express application currently uses the JSON persistence adapter. The repository also includes a normalized MySQL schema, seed data, and ERD as the planned relational database design.
+
+Do not describe the deployed application as MySQL-backed unless the running Railway service is actually migrated and configured for MySQL.
