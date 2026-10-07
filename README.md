@@ -130,3 +130,17 @@ Release-readiness artifacts:
 - `week11.test.js` — release-readiness regression tests
 
 Production configuration requires explicit admin credentials and supports an environment-configurable JSON data-file path.
+
+
+## Week 12 — Final Presentation & Defense
+
+Final preparation artifacts:
+- `docs/retrospective.md`
+- `docs/presentation-outline.md`
+- `docs/final-demo-script.md`
+- `docs/defense-guide.md`
+- `docs/final-submission-checklist.md`
+- `docs/WEEK12_DELIVERABLE.md`
+- `week12.test.js`
+
+The Week 12 defense is individual and unassisted. The preparation guide is for rehearsal only.
