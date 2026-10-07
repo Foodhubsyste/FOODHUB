@@ -115,3 +115,18 @@ Week 10 QA artifacts:
 - `week10.test.js`
 
 Feature freeze applies during the QA pass. The team should run the matrix manually, log real failures as P0/P1/P2 issues, and fix them in the following week.
+
+
+## Week 11 — Fix, Clean Up & Ship
+
+Release-readiness artifacts:
+- `config.js` — centralized environment configuration
+- `.env.example` — documented environment variables without secrets
+- `Procfile` — generic web process entrypoint
+- `docs/deployment.md` — deployment and live smoke-test notes
+- `docs/RELEASE_CHECKLIST.md` — release gate
+- `docs/WEEK11_DELIVERABLE.md` — Week 11 checklist
+- `docs/ai-notes/week-11.md` — AI prompt log
+- `week11.test.js` — release-readiness regression tests
+
+Production configuration requires explicit admin credentials and supports an environment-configurable JSON data-file path.
